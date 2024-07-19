@@ -627,12 +627,12 @@ if __name__ == '__main__':
         last_day = 5
     else:
         #input_data_path = '/media/smithers/shuysman/data/out/nps-wb/static_east/daily-split/'
-        input_data_path = '/home/steve/out/static_east/daily-split/'
+        input_data_path = '/home/steve/out/avalanche/daily-split/'
         #output_data_path = '/media/smithers/shuysman/data/out/nps-wb/static_east/wb/'
-        output_data_path  = '/home/steve/out/static_east/wb/'
+        output_data_path  = '/home/steve/out/avalanche/wb/'
         #input_data_path = os.path.join(os.environ['HOME'], 'out/surprise/daily-split/')
         #output_data_path = os.path.join(os.environ['HOME'], 'out/surprise/wb/')
-        site_data_path = "../data/StephenHuysman_GRTE_WBP_ModelingAreas/static_basin/"
+        site_data_path = "../data/Avalanche_East_Direct_Seeding/"
         collate_cores = 4 # This can be raised once the model loops finish.
         first_day = 0
         last_day = 366
@@ -659,10 +659,10 @@ if __name__ == '__main__':
     # new_y = np.load(input_data_path + 'new_y.npz')['y']
 
 
-    elev = gdal.Open(site_data_path + "dem/static_east_dem_clipped_nad83.tif")
+    elev = gdal.Open(site_data_path + "dem/avalanche_peak_USGS1m_clipped_nad83.tif")
     elevation = elev.ReadAsArray()
-    slope = gdal.Open(site_data_path + "dem/static_east_slope_clipped_nad83.tif").ReadAsArray()
-    aspect = gdal.Open(site_data_path + "dem/static_east_aspect_clipped_nad83.tif").ReadAsArray()
+    slope = gdal.Open(site_data_path + "dem/avalanche_peak_slope_clipped_nad83.tif").ReadAsArray()
+    aspect = gdal.Open(site_data_path + "dem/avalanche_peak_aspect_clipped_nad83.tif").ReadAsArray()
 
     ## Slope in radians, aspect in degrees
     ## Aspect is used to run fold_aspect which takes aspects in degrees and returns radians
@@ -736,13 +736,13 @@ if __name__ == '__main__':
     if (np.nanmax(elevation) > 5700) or (np.nanmin(elevation) < 0): raise Exception('Do you have the wrong elevation file? Terminating.')
     ##heat_load = np.load(input_data_path + 'heat_load_based_on_etopo1.npy')
     ##soil_whc = get_soil_whc()
-    soil_whc = gdal.Open(site_data_path + "soil/soil_whc_025_static_east.tif").ReadAsArray() 
+    soil_whc = gdal.Open(site_data_path + "soil/soil_whc_025.tif").ReadAsArray() 
     soil_water = np.copy(soil_whc) # Initialize soil values at full.
     #intercept_file = np.load('intercept1_from_senay.npz') # Vegetation intercept layer from Gabriel Senay et al. pers. comm.
     #Igrid = intercept_file['intercept']
     ##snow_thresh_file = np.load(input_data_path + 'jennings_t50_coefficients.npz') # Jennings, K. et al. 2018. Spatial variation of the rain-snow temperature threshold across the northern hemisphere. Nature Communications 9: 1148. DOI: 10.1038/s41467-018-03629-7
     ##snow_thresh_temperatures = snow_thresh_file['t50']
-    snow_thresh_temperatures = gdal.Open(site_data_path + "jennings_t50_coefficients_static_east.tif").ReadAsArray()
+    snow_thresh_temperatures = gdal.Open(site_data_path + "jennings_t50_coefficients.tif").ReadAsArray()
     low_thresh_temperatures = snow_thresh_temperatures - 3.0 # The Jennings coefficients are T50, i.e. where precip is half snow, half rain
     high_thresh_temperatures = snow_thresh_temperatures + 3.0 # This sets up a 6 degree span, which corresponds to the 1/6 = 0.167 precip fraction.
     
