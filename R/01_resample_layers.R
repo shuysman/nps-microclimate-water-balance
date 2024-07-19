@@ -2,9 +2,9 @@ library(tidyverse)
 library(sf)
 library(terra)
 
-data_dir <- file.path("../data/StephenHuysman_GRTE_WBP_ModelingAreas/surprise/")
+data_dir <- file.path("../data/Avalanche_East_Direct_Seeding/")
 
-reference <- rast(file.path(data_dir, "dem/surprise_USGS1m_nad83.tif"))
+reference <- rast(file.path(data_dir, "dem/avalanche_peak_USGS1m_clipped_nad83.tif"))
 
 dayl <- rast(file.path(data_dir, "1980_dayl_na.nc4"))
 dayl2 <- project(dayl, reference, method = "near")
@@ -21,14 +21,27 @@ t50 <- crop(t50, reference)
 writeRaster(t50, file.path(data_dir, "jennings_t50_coefficients_surprise.tif"), overwrite=TRUE)
 
 
-soils <- st_read("/home/steve/OneDrive/core_areas/data/StephenHuysman_GRTE_WBP_ModelingAreas/soil/grte_modelingareas_ssurgo.gpkg") %>% vect
+# soils <- st_read("/home/steve/OneDrive/core_areas/data/StephenHuysman_GRTE_WBP_ModelingAreas/soil/grte_modelingareas_ssurgo.gpkg") %>% vect
+
+soils <- st_read(file.path(data_dir, "soil/ssurgo.gpkg")) %>% vect()
+
+### The curve number generator ssurgo download tool in QGIS returns strings for soil AWS.
+### R loads these as factors, and when multiplied by 10, you get the index of the string * 10 instead of
+### the AWS * 10.  This burned me and I lost a lot of time rerunning data.  Make sure that the
+### soil AWS values are numeric and then multiply by ten to convert cm to mm.
+soils$aws025wta <- as.numeric(soils$aws025wta) * 10 
+soils$aws050wta <- as.numeric(soils$aws050wta) * 10
+soils$aws0100wta <- as.numeric(soils$aws0100wta) * 10
+soils$aws0150wta <- as.numeric(soils$aws0150wta) * 10
+
 
 soils_025 <- soils %>%
-    rasterize(reference, field = "aws025wta") * 10 ## cm to mm
+    rasterize(reference, field = "aws025wta") 
 
 writeRaster(soils_025, file.path(data_dir, "soil/soil_whc_025.tif"), overwrite=TRUE)
 
 soils_100 <- soils %>%
-    rasterize(reference, field = "aws0100wta") * 10 ## cm to mm
+    rasterize(reference, field = "aws0100wta")
 
 writeRaster(soils_100, file.path(data_dir, "soil/soil_whc_100.tif"), overwrite=TRUE)
+
