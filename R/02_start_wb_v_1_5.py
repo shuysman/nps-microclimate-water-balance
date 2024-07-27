@@ -605,8 +605,16 @@ if __name__ == '__main__':
 
     model = sys.argv[1]
     scenario = sys.argv[2]
+    site = sys.argv[3]
+    
+    input_data_path = f"/home/steve/out/{site}/daily-split/" ## daily-split directory with daily T/P layers
+    output_data_path = f"/home/steve/out/{site}/wb/" ## Output Directory for daily water balance npz
+    site_data_path = f"../data/StephenHuysman_GRTE_WBP_ModelingAreas/{site}/"
 
     print(f"Model: {model}, Scenario: {scenario}")
+    print(f"Input dir: {input_data_path}")
+    print(f"Output dir: {output_data_path}")
+    
     maca_format_string = '{year_chunk}_macav2metdata_{param}_{model_name1}_{model_name2}_{scenario}_{year1}_{year2}_CONUS_dail_reprojected_with_extent{daynumber}_resampled.tif.zip'
     
     ##scenario = 'rcp85' # ******MUST SET THIS TO CORRECT VALUE BEFORE RUN *****
@@ -617,25 +625,15 @@ if __name__ == '__main__':
     web = True
     npz_cores = 1
         
-    if web == False:
-        #years = list(range(int(real_start_year), int(real_end_year) + 1))
-        input_data_path =  '/media/mt/0CED00122A266FA8/daymet_wb/downloaded_tifs/'
-        output_data_path = '/media/mt/0CED00122A266FA8/daymet_wb/new_outputs/'
-        npz_cores  = 2
-        collate_cores = 5
-        first_day = 0
-        last_day = 5
-    else:
-        #input_data_path = '/media/smithers/shuysman/data/out/nps-wb/static_east/daily-split/'
-        input_data_path = '/home/steve/out/avalanche/daily-split/'
-        #output_data_path = '/media/smithers/shuysman/data/out/nps-wb/static_east/wb/'
-        output_data_path  = '/home/steve/out/avalanche/wb/'
-        #input_data_path = os.path.join(os.environ['HOME'], 'out/surprise/daily-split/')
-        #output_data_path = os.path.join(os.environ['HOME'], 'out/surprise/wb/')
-        site_data_path = "../data/Avalanche_East_Direct_Seeding/"
-        collate_cores = 4 # This can be raised once the model loops finish.
-        first_day = 0
-        last_day = 366
+    #input_data_path = '/media/smithers/shuysman/data/out/nps-wb/static_west/daily-split/'
+    #input_data_path = '/home/steve/out/surprise/daily-split/'
+    #output_data_path = '/media/smithers/shuysman/data/out/nps-wb/static_west/wb/'
+    #output_data_path  = '/home/steve/out/surprise-test/wb/'
+    #input_data_path = os.path.join(os.environ['HOME'], 'out/surprise/daily-split/')
+    #output_data_path = os.path.join(os.environ['HOME'], 'out/surprise/wb/')
+    collate_cores = 4 # This can be raised once the model loops finish.
+    first_day = 0
+    last_day = 366
         
     melt_factor = 4.0
     precip_fraction = 0.167
@@ -653,44 +651,37 @@ if __name__ == '__main__':
     all_ints = True # If True, all output netcdfs will be int16. If False, then categories in def launch_new_collation() are used.
     bad_list = []
 
-    # new_lats = np.load(input_data_path + 'new_lats.npz')['lat']
-    # new_lons = np.load(input_data_path + 'new_lons.npz')['lon']
-    # new_x = np.load(input_data_path + 'new_x.npz')['x']
-    # new_y = np.load(input_data_path + 'new_y.npz')['y']
-
-
-    elev = gdal.Open(site_data_path + "dem/avalanche_peak_USGS1m_clipped_nad83.tif")
+    elev = gdal.Open(site_data_path + "dem/dem_nad83.tif")
     elevation = elev.ReadAsArray()
-    slope = gdal.Open(site_data_path + "dem/avalanche_peak_slope_clipped_nad83.tif").ReadAsArray()
-    aspect = gdal.Open(site_data_path + "dem/avalanche_peak_aspect_clipped_nad83.tif").ReadAsArray()
+    slope = gdal.Open(site_data_path + "dem/slope_nad83.tif").ReadAsArray()
+    aspect = gdal.Open(site_data_path + "dem/aspect_nad83.tif").ReadAsArray()
 
     ## Slope in radians, aspect in degrees
-    ## Aspect is used to run fold_aspect which takes aspects in degrees and returns radians
-    ## calc_heat_load() takes slope and folded aspect in radians, I think
-    ## Heat load should be from 0-~1, I think
+    ## Aspect is used to run old_aspect() which takes aspects
+    ## in degrees and returns folded aspect in radians
+    ## 
+    ## calc_heat_load() takes latitude, slope, and
+    ## folded aspect in radians
+    ##
+    ## Heat load should be from 0.03 - 1.11
     aspect = np.where(aspect < 0, np.nan, aspect)
     aspect_folded = fold_aspect(aspect)
-    slope = np.where(slope < 0, np.nan, slope) * (np.pi / 180)
+    slope = np.where(slope < 0, np.nan, slope)
+    slope = np.where(slope > 60, np.nan, slope) ## Slope is 0-60 for eq3 in McCune 2002
+    slope = slope * (np.pi / 180)
 
     height = elevation.shape[1]
     width = elevation.shape[0]
     
     new_x, new_y = raster2xy(elev)
+    ## Determine lat and lons from utm values
     new_lats, new_lons = utm.to_latlon(new_x, new_y, 12, 'N')
-    new_x = new_x
-    new_y = new_y
-    new_lats = new_lats
-    new_lons = new_lons
+    if (np.nanmax(new_lats) > 60) or (np.nanmin(new_lats) < 30) : raise Exception("Latitude outside of range for heatload function (30-60 degrees). Terminating.")
     
-
-    heat_load = calc_heat_load(new_lats, slope, aspect_folded)
-
-        # #print(tif_list[0:10], tif_list[-10:])
-
-    tif_list_file = f'{model}-{scenario}-listfile.txt'
-    yearbreaks_file = f'{model}-{scenario}-yearbreaks'
-    start_year_file = f'{model}-{scenario}-start_year.txt'
-    end_year_file = f'{model}-{scenario}-end_year.txt'
+    tif_list_file = f'{site}-{model}-{scenario}-listfile.txt'
+    yearbreaks_file = f'{site}-{model}-{scenario}-yearbreaks'
+    start_year_file = f'{site}-{model}-{scenario}-start_year.txt'
+    end_year_file = f'{site}-{model}-{scenario}-end_year.txt'
 
     if not os.path.exists(tif_list_file):
         ### create_tif_file_list takes so long to run.  Let's cache the results
@@ -726,9 +717,13 @@ if __name__ == '__main__':
     accum_precip = np.zeros((width,height)).astype(np.float32)
     agdd = np.zeros((width,height)).astype(np.float32)
     last_accumswe = np.zeros((width,height)).astype(np.float32)
-    ##latitude = get_latitude_radians('1980','dayl') #Radians
+
     latitude = (np.pi / 180) * new_lats
     if (np.nanmax(latitude) > 1.5) or (np.nanmin(latitude) < 0.1) : raise Exception('Latitude is not in radians or wrong file has been used. Terminating.')
+    heat_load = calc_heat_load(latitude, slope, aspect_folded)
+    if (np.nanmax(heat_load) > 1.11) or (np.nanmin(heat_load) < 0.03) : raise Exception("Heat load exceeds specified values. Terminating.")
+    np.savez_compressed(f"{site}-{model}-{scenario}-heatload.npz", heat_load)
+    
     #Global vars used here to save duplication in memory associated with passing to funcs
     ##elevation = np.load(input_data_path + 'etopo1_aligned_array.npy') # In meters
     ##multiplier_mask = np.load(input_data_path + 'multiplier_mask.npz')['arr_0']
@@ -736,7 +731,8 @@ if __name__ == '__main__':
     if (np.nanmax(elevation) > 5700) or (np.nanmin(elevation) < 0): raise Exception('Do you have the wrong elevation file? Terminating.')
     ##heat_load = np.load(input_data_path + 'heat_load_based_on_etopo1.npy')
     ##soil_whc = get_soil_whc()
-    soil_whc = gdal.Open(site_data_path + "soil/soil_whc_025.tif").ReadAsArray() 
+    soil_whc = gdal.Open(site_data_path + "soil/soil_whc_025.tif").ReadAsArray()
+    if (np.nanmax(soil_whc) < 10) : raise Exception("Soil values appear to be in cm, convert to mm before use. Terminating") ### Soil values are between around 10-100mm for 25cm depths.  Need to adjust this if deeper soil depths are used
     soil_water = np.copy(soil_whc) # Initialize soil values at full.
     #intercept_file = np.load('intercept1_from_senay.npz') # Vegetation intercept layer from Gabriel Senay et al. pers. comm.
     #Igrid = intercept_file['intercept']
@@ -764,7 +760,8 @@ if __name__ == '__main__':
     chunk_index = tif_list[0].split('_')[0] # The number appearing at the start of each tif filename
     year_break_index = 0 # The set of year breaks, corresponding to file chunks, that we are currently using
     day_index = 0 + testing_offset
-    log_file = open(f'{model}-{scenario}-logfile.csv','w')
+    log_file = open(f'{site}-{model}-{scenario}-logfile.csv','w')
+
     for tif in tif_list: 
         current_pr_file = tif_list[file_index]
         current_tmax_file = set_param(current_pr_file,'tmmx')
