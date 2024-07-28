@@ -5,7 +5,8 @@ library(reticulate)
 library(tidyverse)
 library(parallel)
 
-terraOptions(verbose = TRUE)
+terraOptions(verbose = TRUE,
+             memfrac = 0.9)
 
 ### Output from start_wb_v_1_5.py script is a bunch of npz files,
 ### one for each day/year/model/scenario.  Import python numpy library
