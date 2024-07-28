@@ -33,13 +33,10 @@ pal_greys <- hcl.colors(1000, "Grays")
 
 grte_polys <- st_read("./data/StephenHuysman_GRTE_WBP_ModelingAreas/GRTE_WBP_ModelingAreas_merged.shp")
 
-
 historical <- 1979:2022
 load_historical <- function(filename) {
     r <- rast(filename)
-    time(r) <- seq(ymd("1979-07-02"), ymd("2022-07-02"), by = "1 year")
     r <- r %>%
-        subset(year(time(.)) %in% historical) %>% 
         clamp(lower = 0, values = FALSE) / 10 ## remove NAs and divide by ten (nps gridded wb is provided in units x 10)
     return(r)
 }
@@ -47,7 +44,6 @@ load_historical <- function(filename) {
 end <- 2075:2099
 load_gcm_mean <- function(filename) {
     r <- rast(filename)
-    time(r) <- seq(ymd("2006-07-02"), ymd("2099-07-02"), by = "1 year")
     r <- r %>%
         subset(year(time(.)) %in% end) %>% ## Limit to end-century conditions
         mean() %>%
@@ -117,13 +113,13 @@ wbp_points %>%
 ## Topographic & Soil Features
 ```{r static-west-poly, fig.cap = "Static West Direct Seeding Polygon with Hillshade from 1m LiDAR DEM"}
 static_west_poly <- grte_polys[2,] %>% st_transform(crs = st_crs("EPSG:26912"))
-static_west_elev <- rast("./data/StephenHuysman_GRTE_WBP_ModelingAreas/static_basin/dem/static_west_dem_clipped_nad83.tif")
-static_west_slope <- rast("./data/StephenHuysman_GRTE_WBP_ModelingAreas/static_basin/dem/static_west_slope_clipped_nad83.tif")
-static_west_aspect <- rast("./data/StephenHuysman_GRTE_WBP_ModelingAreas/static_basin/dem/static_west_aspect_clipped_nad83.tif")
-static_west_hs <- rast("./data/StephenHuysman_GRTE_WBP_ModelingAreas/static_basin/dem/static_west_hillshade_clipped_nad83.tif")
+static_west_elev <- rast("./data/input/static_west/dem/dem_nad83.tif")
+static_west_slope <- rast("./data/input/static_west/dem/slope_nad83.tif")
+static_west_aspect <- rast("./data/input/static_west/dem/aspect_nad83.tif")
+static_west_hs <- rast("./data/input/static_west/dem/hillshade_nad83.tif")
 
 slope_mask <- subst(static_west_slope > 60, FALSE, NA) ## HL Function can't take inputs >60 degrees for slope
-soil_mask <- st_read("data/StephenHuysman_GRTE_WBP_ModelingAreas/soil/grte_modelingareas_ssurgo.shp") %>% subset(fid %in% c(15, 16)) ### soil type with NA soil depth, screws up WB calculations
+soil_mask <- st_read("data/input/soil/grte_modelingareas_ssurgo.shp") %>% subset(fid %in% c(15, 16)) ### soil type with NA soil depth, screws up WB calculations
 
 ggplot() +
     geom_spatraster(data = static_west_hs, show.legend = FALSE) +
@@ -152,7 +148,7 @@ knitr::kable(
 ```
 
 ```{r static-west-soil, fig.cap = "Static West Soil Water Holding Capacity (WHC, mm) at 25 cm soil depth."}
-static_west_soil <- rast("./data/StephenHuysman_GRTE_WBP_ModelingAreas/static_basin/soil/soil_whc_025_static_west.tif")
+static_west_soil <- rast("./data/input/static_west/soil/soil_whc_025.tif")
 
 ggplot() +
     geom_spatraster(data = static_west_soil) +
@@ -233,130 +229,130 @@ ggplot() +
 ```
 
 
-## Projected Water Balance 
+<!-- ## Projected Water Balance  -->
 
 
-Four GCM/Emission Scenario combinations were selected to bracket the range of
-plausible future climates based on 'Warm/Wet', 'Warm/Dry', 'Hot/Wet',
-and 'Hot/Dry' scenarios determined by changes in annual Temperature
-and Precipitation.  These show the most extreme projections of future
-climate.  For visualizations of future AET and CWD, only the "best"
-and "worst" case scenarios are showing for the sake of brevity.
-Climate projections are summarized across the years 2075-2099 to
-represent "end-of-century" conditions.  Given the long amounts of time
-needed for WBP trees to reach reproductive maturity, this is
-approximately the time period that trees planted today would be
-producing cones.
+<!-- Four GCM/Emission Scenario combinations were selected to bracket the range of -->
+<!-- plausible future climates based on 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', -->
+<!-- and 'Hot/Dry' scenarios determined by changes in annual Temperature -->
+<!-- and Precipitation.  These show the most extreme projections of future -->
+<!-- climate.  For visualizations of future AET and CWD, only the "best" -->
+<!-- and "worst" case scenarios are showing for the sake of brevity. -->
+<!-- Climate projections are summarized across the years 2075-2099 to -->
+<!-- represent "end-of-century" conditions.  Given the long amounts of time -->
+<!-- needed for WBP trees to reach reproductive maturity, this is -->
+<!-- approximately the time period that trees planted today would be -->
+<!-- producing cones. -->
 
-| Future   | GCM           | Scenario | Note                                                                  |
-|----------|---------------|----------|-----------------------------------------------------------------------|
-| Warm Wet | MRI-CGCM3     | RCP8.5   |                                                                       |
-| Hot Wet  | CanESM2       | RCP8.5   | 'Best-Case' AET Scenario (Highest)                                    |
-| Warm Dry | MRI-CGCM3     | RCP4.5   | 'Worse-Case' AET Scenario (Lowest), 'Best-Case' CWD Scenario (Lowest) |
-| Hot Dry  | HadGEM2-CC365 | RCP8.5   | 'Worse-Case' CWD Scenario (Highest)                                   |
-
-
-
-```{r, static_west-projections, fig.height = 8, fig.width = 16, fig.cap = "Projected Water Balance"}
-## best_case_aet: hot_wet
-## worse_case_aet: warm_dry
-## best_case_cwd: warm_dry
-## worst_case_cwd: hot_dry
-
-static_west_aet_warm_wet <- load_gcm_mean(file.path(static_west_projections_dir, "MRI-CGCM3_rcp85_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
-static_west_aet_hot_wet <- load_gcm_mean(file.path(static_west_projections_dir,"CanESM2_rcp85_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
-static_west_aet_warm_dry <- load_gcm_mean(file.path(static_west_projections_dir, "MRI-CGCM3_rcp45_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
-static_west_aet_hot_dry <- load_gcm_mean(file.path(static_west_projections_dir,"HadGEM2-CC365_rcp85_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
-
-static_west_aet_warm_wet_change <- (static_west_aet_warm_wet - static_west_aet_2022) / static_west_aet_2022
-static_west_aet_hot_wet_change <- (static_west_aet_hot_wet - static_west_aet_2022) / static_west_aet_2022
-static_west_aet_warm_dry_change <- (static_west_aet_warm_dry - static_west_aet_2022) / static_west_aet_2022
-static_west_aet_hot_dry_change <- (static_west_aet_hot_dry - static_west_aet_2022) / static_west_aet_2022
-
-static_west_cwd_warm_dry <- load_gcm_mean(file.path(static_west_projections_dir, "MRI-CGCM3_rcp45_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
-static_west_cwd_hot_dry <- load_gcm_mean(file.path(static_west_projections_dir,"HadGEM2-CC365_rcp85_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
-static_west_cwd_warm_wet <- load_gcm_mean(file.path(static_west_projections_dir, "MRI-CGCM3_rcp85_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
-static_west_cwd_hot_wet <- load_gcm_mean(file.path(static_west_projections_dir,"CanESM2_rcp85_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
-
-static_west_cwd_warm_dry_change <- (static_west_cwd_warm_dry - static_west_cwd_2022) / static_west_aet_2022
-static_west_cwd_hot_dry_change <- (static_west_cwd_hot_dry - static_west_cwd_2022) / static_west_aet_2022
-static_west_cwd_warm_wet_change <- (static_west_cwd_warm_wet - static_west_cwd_2022) / static_west_aet_2022
-static_west_cwd_hot_wet_change <- (static_west_cwd_hot_wet - static_west_cwd_2022) / static_west_aet_2022
-
-aet_hot_wet_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = static_west_aet_hot_wet) +
-    scale_fill_viridis_c(option = "D") +
-    geom_sf(data = static_west_poly, fill = NA, lwd = 1.5) +
-    labs(title = "AET Hot-Wet ('Best-Case'/Highest)", x = "", y = "") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
-
-aet_warm_dry_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = static_west_aet_warm_dry) +
-    scale_fill_viridis_c(option = "D") +
-    geom_sf(data = static_west_poly, fill = NA, lwd = 1.5) +
-    labs(title = "AET Warm-Dry ('Worst-Case'/Lowest)", x = "", y = "") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
-
-cwd_warm_dry_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = static_west_cwd_warm_dry) +
-    scale_fill_viridis_c(option = "B") +
-    geom_sf(data = static_west_poly, fill = NA, lwd = 1.5) +
-    labs(title = "CWD Warm-Dry ('Best-Case'/Lowest)", x = "", y = "") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
-
-cwd_hot_dry_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = static_west_cwd_hot_dry) +
-    scale_fill_viridis_c(option = "B") +
-    geom_sf(data = static_west_poly, fill = NA, lwd = 1.5) +
-    labs(title = "CWD Hot-Dry ('Worst-Case'/Highest)", x = "", y = "") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
-
-ggarrange(aet_hot_wet_plot, aet_warm_dry_plot)
-ggarrange(cwd_warm_dry_plot, cwd_hot_dry_plot)
-
-```
+<!-- | Future   | GCM           | Scenario | Note                                                                  | -->
+<!-- |----------|---------------|----------|-----------------------------------------------------------------------| -->
+<!-- | Warm Wet | MRI-CGCM3     | RCP8.5   |                                                                       | -->
+<!-- | Hot Wet  | CanESM2       | RCP8.5   | 'Best-Case' AET Scenario (Highest)                                    | -->
+<!-- | Warm Dry | MRI-CGCM3     | RCP4.5   | 'Worse-Case' AET Scenario (Lowest), 'Best-Case' CWD Scenario (Lowest) | -->
+<!-- | Hot Dry  | HadGEM2-CC365 | RCP8.5   | 'Worse-Case' CWD Scenario (Highest)                                   | -->
 
 
-## Climate Summary
 
-```{r, static-west-climate-summary, fig.height = 6, fig.width = 8, fig.cap = "Static West Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"}
-aet_df <- as.data.frame(static_west_aet_1988)
-aet_df <- cbind(aet_df, as.data.frame(static_west_aet_2022))
-aet_df <- cbind(aet_df, as.data.frame(static_west_aet_warm_wet))
-aet_df <- cbind(aet_df, as.data.frame(static_west_aet_hot_wet))
-aet_df <- cbind(aet_df, as.data.frame(static_west_aet_warm_dry))
-aet_df <- cbind(aet_df, as.data.frame(static_west_aet_hot_dry))
-names(aet_df) = c("AET_1988", "AET_2022", "AET_warm_wet", "AET_hot_wet", "AET_warm_dry", "AET_hot_dry")
-aet_df <- aet_df %>%
-    pivot_longer(cols = 1:6)
+<!-- ```{r, static_west-projections, fig.height = 8, fig.width = 16, fig.cap = "Projected Water Balance"} -->
+<!-- ## best_case_aet: hot_wet -->
+<!-- ## worse_case_aet: warm_dry -->
+<!-- ## best_case_cwd: warm_dry -->
+<!-- ## worst_case_cwd: hot_dry -->
 
-ggplot(aet_df) +
-    geom_boxplot(aes(name, value)) +
-    labs(title = "Static_West East AET", x = "Scenario", y = "Annual AET (mm)")
+<!-- static_west_aet_warm_wet <- load_gcm_mean(file.path(static_west_projections_dir, "MRI-CGCM3_rcp85_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE) -->
+<!-- static_west_aet_hot_wet <- load_gcm_mean(file.path(static_west_projections_dir,"CanESM2_rcp85_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE) -->
+<!-- static_west_aet_warm_dry <- load_gcm_mean(file.path(static_west_projections_dir, "MRI-CGCM3_rcp45_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE) -->
+<!-- static_west_aet_hot_dry <- load_gcm_mean(file.path(static_west_projections_dir,"HadGEM2-CC365_rcp85_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE) -->
 
-cwd_df <- as.data.frame(static_west_cwd_1988)
-cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_2022))
-cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_warm_wet))
-cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_hot_wet))
-cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_warm_dry))
-cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_hot_dry))
-names(cwd_df) = c("CWD_1988", "CWD_2022", "CWD_warm_wet", "CWD_hot_wet", "CWD_warm_dry", "CWD_hot_dry")
-cwd_df <- cwd_df %>%
-    pivot_longer(cols = 1:6)
+<!-- static_west_aet_warm_wet_change <- (static_west_aet_warm_wet - static_west_aet_2022) / static_west_aet_2022 -->
+<!-- static_west_aet_hot_wet_change <- (static_west_aet_hot_wet - static_west_aet_2022) / static_west_aet_2022 -->
+<!-- static_west_aet_warm_dry_change <- (static_west_aet_warm_dry - static_west_aet_2022) / static_west_aet_2022 -->
+<!-- static_west_aet_hot_dry_change <- (static_west_aet_hot_dry - static_west_aet_2022) / static_west_aet_2022 -->
 
-ggplot(cwd_df) +
-    geom_boxplot(aes(name, value)) +
-    labs(title = "Static_West East CWD", x = "Scenario", y = "Annual CWD (mm)")
+<!-- static_west_cwd_warm_dry <- load_gcm_mean(file.path(static_west_projections_dir, "MRI-CGCM3_rcp45_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE) -->
+<!-- static_west_cwd_hot_dry <- load_gcm_mean(file.path(static_west_projections_dir,"HadGEM2-CC365_rcp85_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE) -->
+<!-- static_west_cwd_warm_wet <- load_gcm_mean(file.path(static_west_projections_dir, "MRI-CGCM3_rcp85_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE) -->
+<!-- static_west_cwd_hot_wet <- load_gcm_mean(file.path(static_west_projections_dir,"CanESM2_rcp85_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE) -->
 
-```
+<!-- static_west_cwd_warm_dry_change <- (static_west_cwd_warm_dry - static_west_cwd_2022) / static_west_aet_2022 -->
+<!-- static_west_cwd_hot_dry_change <- (static_west_cwd_hot_dry - static_west_cwd_2022) / static_west_aet_2022 -->
+<!-- static_west_cwd_warm_wet_change <- (static_west_cwd_warm_wet - static_west_cwd_2022) / static_west_aet_2022 -->
+<!-- static_west_cwd_hot_wet_change <- (static_west_cwd_hot_wet - static_west_cwd_2022) / static_west_aet_2022 -->
+
+<!-- aet_hot_wet_plot <- ggplot() + -->
+<!--     ggnewscale::new_scale_fill() + -->
+<!--     geom_spatraster(data = static_west_aet_hot_wet) + -->
+<!--     scale_fill_viridis_c(option = "D") + -->
+<!--     geom_sf(data = static_west_poly, fill = NA, lwd = 1.5) + -->
+<!--     labs(title = "AET Hot-Wet ('Best-Case'/Highest)", x = "", y = "") + -->
+<!--     annotation_north_arrow(aes(location = "tr")) + -->
+<!--     annotation_scale(aes(location = "br")) -->
+
+<!-- aet_warm_dry_plot <- ggplot() + -->
+<!--     ggnewscale::new_scale_fill() + -->
+<!--     geom_spatraster(data = static_west_aet_warm_dry) + -->
+<!--     scale_fill_viridis_c(option = "D") + -->
+<!--     geom_sf(data = static_west_poly, fill = NA, lwd = 1.5) + -->
+<!--     labs(title = "AET Warm-Dry ('Worst-Case'/Lowest)", x = "", y = "") + -->
+<!--     annotation_north_arrow(aes(location = "tr")) + -->
+<!--     annotation_scale(aes(location = "br")) -->
+
+<!-- cwd_warm_dry_plot <- ggplot() + -->
+<!--     ggnewscale::new_scale_fill() + -->
+<!--     geom_spatraster(data = static_west_cwd_warm_dry) + -->
+<!--     scale_fill_viridis_c(option = "B") + -->
+<!--     geom_sf(data = static_west_poly, fill = NA, lwd = 1.5) + -->
+<!--     labs(title = "CWD Warm-Dry ('Best-Case'/Lowest)", x = "", y = "") + -->
+<!--     annotation_north_arrow(aes(location = "tr")) + -->
+<!--     annotation_scale(aes(location = "br")) -->
+
+<!-- cwd_hot_dry_plot <- ggplot() + -->
+<!--     ggnewscale::new_scale_fill() + -->
+<!--     geom_spatraster(data = static_west_cwd_hot_dry) + -->
+<!--     scale_fill_viridis_c(option = "B") + -->
+<!--     geom_sf(data = static_west_poly, fill = NA, lwd = 1.5) + -->
+<!--     labs(title = "CWD Hot-Dry ('Worst-Case'/Highest)", x = "", y = "") + -->
+<!--     annotation_north_arrow(aes(location = "tr")) + -->
+<!--     annotation_scale(aes(location = "br")) -->
+
+<!-- ggarrange(aet_hot_wet_plot, aet_warm_dry_plot) -->
+<!-- ggarrange(cwd_warm_dry_plot, cwd_hot_dry_plot) -->
+
+<!-- ``` -->
+
+
+<!-- ## Climate Summary -->
+
+<!-- ```{r, static-west-climate-summary, fig.height = 6, fig.width = 8, fig.cap = "Static West Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"} -->
+<!-- aet_df <- as.data.frame(static_west_aet_1988) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(static_west_aet_2022)) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(static_west_aet_warm_wet)) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(static_west_aet_hot_wet)) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(static_west_aet_warm_dry)) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(static_west_aet_hot_dry)) -->
+<!-- names(aet_df) = c("AET_1988", "AET_2022", "AET_warm_wet", "AET_hot_wet", "AET_warm_dry", "AET_hot_dry") -->
+<!-- aet_df <- aet_df %>% -->
+<!--     pivot_longer(cols = 1:6) -->
+
+<!-- ggplot(aet_df) + -->
+<!--     geom_boxplot(aes(name, value)) + -->
+<!--     labs(title = "Static_West East AET", x = "Scenario", y = "Annual AET (mm)") -->
+
+<!-- cwd_df <- as.data.frame(static_west_cwd_1988) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_2022)) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_warm_wet)) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_hot_wet)) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_warm_dry)) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(static_west_cwd_hot_dry)) -->
+<!-- names(cwd_df) = c("CWD_1988", "CWD_2022", "CWD_warm_wet", "CWD_hot_wet", "CWD_warm_dry", "CWD_hot_dry") -->
+<!-- cwd_df <- cwd_df %>% -->
+<!--     pivot_longer(cols = 1:6) -->
+
+<!-- ggplot(cwd_df) + -->
+<!--     geom_boxplot(aes(name, value)) + -->
+<!--     labs(title = "Static_West East CWD", x = "Scenario", y = "Annual CWD (mm)") -->
+
+<!-- ``` -->
 
 <!-- # Export Files -->
 ```{r, export, eval = F, include = F}
@@ -364,10 +360,10 @@ ggplot(cwd_df) +
 
 writeRaster(static_west_aet_2022, "for_libby/static_west/static_west_aet_2002-2022.tif", overwrite = TRUE)
 writeRaster(static_west_cwd_2022, "for_libby/static_west/static_west_cwd_2002-2022.tif", overwrite = TRUE)
-writeRaster(static_west_aet_hot_wet_change, "for_libby/static_west/static_west_aet_hot_wet_change.tif", overwrite = TRUE)
-writeRaster(static_west_cwd_hot_dry_change, "for_libby/static_west/static_west_cwd_hot_dry_change.tif", overwrite = TRUE)
-writeRaster(static_west_aet_hot_wet, "for_libby/static_west/static_west_aet_hot_wet.tif", overwrite = TRUE)
-writeRaster(static_west_cwd_hot_dry, "for_libby/static_west/static_west_cwd_hot_dry.tif", overwrite = TRUE)
+## writeRaster(static_west_aet_hot_wet_change, "for_libby/static_west/static_west_aet_hot_wet_change.tif", overwrite = TRUE)
+## writeRaster(static_west_cwd_hot_dry_change, "for_libby/static_west/static_west_cwd_hot_dry_change.tif", overwrite = TRUE)
+## writeRaster(static_west_aet_hot_wet, "for_libby/static_west/static_west_aet_hot_wet.tif", overwrite = TRUE)
+## writeRaster(static_west_cwd_hot_dry, "for_libby/static_west/static_west_cwd_hot_dry.tif", overwrite = TRUE)
 
 ```
 

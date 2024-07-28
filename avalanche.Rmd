@@ -260,207 +260,207 @@ ggplot() +
 ```
 
 
-# Projected Water Balance
+<!-- # Projected Water Balance -->
 
-Four GCM/Emission Scenario combinations were selected to bracket the range of
-plausible future climates based on 'Warm/Wet', 'Warm/Dry', 'Hot/Wet',
-and 'Hot/Dry' scenarios determined by changes in annual Temperature
-and Precipitation.  These show the most extreme projections of future
-climate.  For visualizations of future AET and CWD, only the "best"
-and "worst" case scenarios are showing for the sake of brevity.
-Climate projections are summarized across the years 2075-2099 to
-represent "end-of-century" conditions.  Given the long amounts of time
-needed for WBP trees to reach reproductive maturity, this is
-approximately the time period that trees planted today would be
-producing cones.
+<!-- Four GCM/Emission Scenario combinations were selected to bracket the range of -->
+<!-- plausible future climates based on 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', -->
+<!-- and 'Hot/Dry' scenarios determined by changes in annual Temperature -->
+<!-- and Precipitation.  These show the most extreme projections of future -->
+<!-- climate.  For visualizations of future AET and CWD, only the "best" -->
+<!-- and "worst" case scenarios are showing for the sake of brevity. -->
+<!-- Climate projections are summarized across the years 2075-2099 to -->
+<!-- represent "end-of-century" conditions.  Given the long amounts of time -->
+<!-- needed for WBP trees to reach reproductive maturity, this is -->
+<!-- approximately the time period that trees planted today would be -->
+<!-- producing cones. -->
 
-| Future   | GCM           | Scenario | Note                                                                  |
-|----------|---------------|----------|-----------------------------------------------------------------------|
-| Warm Wet | MRI-CGCM3     | RCP8.5   |                                                                       |
-| Hot Wet  | CanESM2       | RCP8.5   | 'Best-Case' AET Scenario (Highest)                                    |
-| Warm Dry | MRI-CGCM3     | RCP4.5   | 'Worse-Case' AET Scenario (Lowest), 'Best-Case' CWD Scenario (Lowest) |
-| Hot Dry  | HadGEM2-CC365 | RCP8.5   | 'Worse-Case' CWD Scenario (Highest)                                   |
-
-
-
-``` {r, avalanche-projections, fig.height = 8, fig.width = 16, fig.cap = "Projected Water Balance"}
-## best_case_aet: hot_wet
-## worse_case_aet: warm_dry
-## best_case_cwd: warm_dry
-## worst_case_cwd: hot_dry
-
-avalanche_aet_warm_wet <- load_gcm_mean(file.path(avalanche_projections_dir, "MRI-CGCM3_rcp85_AET_annual_sum.nc"))
-avalanche_aet_hot_wet <- load_gcm_mean(file.path(avalanche_projections_dir,"CanESM2_rcp85_AET_annual_sum.nc"))
-avalanche_aet_warm_dry <- load_gcm_mean(file.path(avalanche_projections_dir, "MRI-CGCM3_rcp45_AET_annual_sum.nc"))
-avalanche_aet_hot_dry <- load_gcm_mean(file.path(avalanche_projections_dir,"HadGEM2-CC365_rcp85_AET_annual_sum.nc"))
-
-avalanche_aet_warm_wet_change <- (avalanche_aet_warm_wet - avalanche_aet_2022) / avalanche_aet_2022
-avalanche_aet_hot_wet_change <- (avalanche_aet_hot_wet - avalanche_aet_2022) / avalanche_aet_2022
-avalanche_aet_warm_dry_change <- (avalanche_aet_warm_dry - avalanche_aet_2022) / avalanche_aet_2022
-avalanche_aet_hot_dry_change <- (avalanche_aet_hot_dry - avalanche_aet_2022) / avalanche_aet_2022
-
-avalanche_cwd_warm_dry <- load_gcm_mean(file.path(avalanche_projections_dir, "MRI-CGCM3_rcp45_Deficit_annual_sum.nc"))
-avalanche_cwd_hot_dry <- load_gcm_mean(file.path(avalanche_projections_dir,"HadGEM2-CC365_rcp85_Deficit_annual_sum.nc"))
-avalanche_cwd_warm_wet <- load_gcm_mean(file.path(avalanche_projections_dir, "MRI-CGCM3_rcp85_Deficit_annual_sum.nc"))
-avalanche_cwd_hot_wet <- load_gcm_mean(file.path(avalanche_projections_dir,"CanESM2_rcp85_Deficit_annual_sum.nc"))
-
-avalanche_cwd_warm_dry_change <- (avalanche_cwd_warm_dry - avalanche_cwd_2022) / avalanche_aet_2022
-avalanche_cwd_hot_dry_change <- (avalanche_cwd_hot_dry - avalanche_cwd_2022) / avalanche_aet_2022
-avalanche_cwd_warm_wet_change <- (avalanche_cwd_warm_wet - avalanche_cwd_2022) / avalanche_aet_2022
-avalanche_cwd_hot_wet_change <- (avalanche_cwd_hot_wet - avalanche_cwd_2022) / avalanche_aet_2022
-
-aet_hot_wet_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = avalanche_aet_hot_wet) +
-    scale_fill_viridis_c(option = "D") +
-    geom_sf(data = avalanche_poly, fill = NA, lwd = 1.5) +
-    labs(title = "AET Hot-Wet ('Best-Case'/Highest)", x = "", y = "") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
-
-aet_warm_dry_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = avalanche_aet_warm_dry) +
-    scale_fill_viridis_c(option = "D") +
-    geom_sf(data = avalanche_poly, fill = NA, lwd = 1.5) +
-    labs(title = "AET Warm-Dry ('Worst-Case'/Lowest)", x = "", y = "") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
-
-cwd_warm_dry_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = avalanche_cwd_warm_dry) +
-    scale_fill_viridis_c(option = "B") +
-    geom_sf(data = avalanche_poly, fill = NA, lwd = 1.5) +
-    labs(title = "CWD Warm-Dry ('Best-Case'/Lowest)", x = "", y = "") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
-
-cwd_hot_dry_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = avalanche_cwd_hot_dry) +
-    scale_fill_viridis_c(option = "B") +
-    geom_sf(data = avalanche_poly, fill = NA, lwd = 1.5) +
-    labs(title = "CWD Hot-Dry ('Worst-Case'/Highest)", x = "", y = "") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
-
-ggarrange(aet_hot_wet_plot, aet_warm_dry_plot)
-ggarrange(cwd_warm_dry_plot, cwd_hot_dry_plot)
-
-```
-
-# Climate Summary
-
-```{r, climate-summary, fig.height = 6, fig.width = 8, fig.cap = "Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"}
-aet_df <- as.data.frame(avalanche_aet_1988)
-aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_2022))
-aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_warm_wet))
-aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_hot_wet))
-aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_warm_dry))
-aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_hot_dry))
-names(aet_df) = c("AET_1988", "AET_2022", "AET_warm_wet", "AET_hot_wet", "AET_warm_dry", "AET_hot_dry")
-aet_df <- aet_df %>%
-    pivot_longer(cols = 1:6)
-
-ggplot(aet_df) +
-    geom_boxplot(aes(name, value)) +
-    labs(title = "Avalanche East AET", x = "Scenario", y = "Annual AET (mm)")
-
-cwd_df <- as.data.frame(avalanche_cwd_1988)
-cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_2022))
-cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_warm_wet))
-cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_hot_wet))
-cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_warm_dry))
-cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_hot_dry))
-names(cwd_df) = c("CWD_1988", "CWD_2022", "CWD_warm_wet", "CWD_hot_wet", "CWD_warm_dry", "CWD_hot_dry")
-cwd_df <- cwd_df %>%
-    pivot_longer(cols = 1:6)
-
-ggplot(cwd_df) +
-    geom_boxplot(aes(name, value)) +
-    labs(title = "Avalanche East CWD", x = "Scenario", y = "Annual CWD (mm)")
-
-```
-
-```{r, leaflet}
-library(viridis)
-
-s <- c(avalanche_cwd_1988, avalanche_cwd_2022, avalanche_cwd_warm_dry, avalanche_cwd_hot_dry)
-names(s) <- c("avalanche_cwd_1988", "avalanche_cwd_2022", "avalanche_cwd_warm_dry", "avalanche_cwd_hot_dry")
-
-plet(s, y = 1:4, tiles = "Esri.WorldImagery", alpha = 0.65, col = inferno(10), collapse = FALSE)
-
-```
+<!-- | Future   | GCM           | Scenario | Note                                                                  | -->
+<!-- |----------|---------------|----------|-----------------------------------------------------------------------| -->
+<!-- | Warm Wet | MRI-CGCM3     | RCP8.5   |                                                                       | -->
+<!-- | Hot Wet  | CanESM2       | RCP8.5   | 'Best-Case' AET Scenario (Highest)                                    | -->
+<!-- | Warm Dry | MRI-CGCM3     | RCP4.5   | 'Worse-Case' AET Scenario (Lowest), 'Best-Case' CWD Scenario (Lowest) | -->
+<!-- | Hot Dry  | HadGEM2-CC365 | RCP8.5   | 'Worse-Case' CWD Scenario (Highest)                                   | -->
 
 
-```{r, rayshader}
-library(rayshader)
 
-avalanche_cwd_hot_dry_rgb <- rast("raster/avalanche_cwd_hot_dry_rgb.tif")
+<!-- ``` {r, avalanche-projections, fig.height = 8, fig.width = 16, fig.cap = "Projected Water Balance"} -->
+<!-- ## best_case_aet: hot_wet -->
+<!-- ## worse_case_aet: warm_dry -->
+<!-- ## best_case_cwd: warm_dry -->
+<!-- ## worst_case_cwd: hot_dry -->
 
-# breakout RGB layers
-names(avalanche_cwd_hot_dry_rgb) <- c("r", "g", "b", "x")
-topo_r <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$r)
-topo_g <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$g)
-topo_b <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$b)
-topo_rgb_array <- array(0, dim = c(nrow(topo_r), ncol(topo_r), 3))
-topo_rgb_array[,,1] <- topo_r/255
-topo_rgb_array[,,2] <- topo_g/255
-topo_rgb_array[,,3] <- topo_b/255
-topo_rgb_array <- aperm(topo_rgb_array, c(2,1,3))
+<!-- avalanche_aet_warm_wet <- load_gcm_mean(file.path(avalanche_projections_dir, "MRI-CGCM3_rcp85_AET_annual_sum.nc")) -->
+<!-- avalanche_aet_hot_wet <- load_gcm_mean(file.path(avalanche_projections_dir,"CanESM2_rcp85_AET_annual_sum.nc")) -->
+<!-- avalanche_aet_warm_dry <- load_gcm_mean(file.path(avalanche_projections_dir, "MRI-CGCM3_rcp45_AET_annual_sum.nc")) -->
+<!-- avalanche_aet_hot_dry <- load_gcm_mean(file.path(avalanche_projections_dir,"HadGEM2-CC365_rcp85_AET_annual_sum.nc")) -->
 
-dims <- dim(topo_rgb_array)
-width = dims[2]
-height = dims[1]
+<!-- avalanche_aet_warm_wet_change <- (avalanche_aet_warm_wet - avalanche_aet_2022) / avalanche_aet_2022 -->
+<!-- avalanche_aet_hot_wet_change <- (avalanche_aet_hot_wet - avalanche_aet_2022) / avalanche_aet_2022 -->
+<!-- avalanche_aet_warm_dry_change <- (avalanche_aet_warm_dry - avalanche_aet_2022) / avalanche_aet_2022 -->
+<!-- avalanche_aet_hot_dry_change <- (avalanche_aet_hot_dry - avalanche_aet_2022) / avalanche_aet_2022 -->
 
-zscale = 1
+<!-- avalanche_cwd_warm_dry <- load_gcm_mean(file.path(avalanche_projections_dir, "MRI-CGCM3_rcp45_Deficit_annual_sum.nc")) -->
+<!-- avalanche_cwd_hot_dry <- load_gcm_mean(file.path(avalanche_projections_dir,"HadGEM2-CC365_rcp85_Deficit_annual_sum.nc")) -->
+<!-- avalanche_cwd_warm_wet <- load_gcm_mean(file.path(avalanche_projections_dir, "MRI-CGCM3_rcp85_Deficit_annual_sum.nc")) -->
+<!-- avalanche_cwd_hot_wet <- load_gcm_mean(file.path(avalanche_projections_dir,"CanESM2_rcp85_Deficit_annual_sum.nc")) -->
 
-# rayshade
-elev_mat <- raster_to_matrix(avalanche_elev)
-elev_mat = resize_matrix(elev_mat, scale=1)
-ray_shadow <- ray_shade(elev_mat, sunaltitude = 30, zscale = zscale, multicore = TRUE)
-ambient_shadow <- ambient_shade(elev_mat, zscale = zscale)
+<!-- avalanche_cwd_warm_dry_change <- (avalanche_cwd_warm_dry - avalanche_cwd_2022) / avalanche_aet_2022 -->
+<!-- avalanche_cwd_hot_dry_change <- (avalanche_cwd_hot_dry - avalanche_cwd_2022) / avalanche_aet_2022 -->
+<!-- avalanche_cwd_warm_wet_change <- (avalanche_cwd_warm_wet - avalanche_cwd_2022) / avalanche_aet_2022 -->
+<!-- avalanche_cwd_hot_wet_change <- (avalanche_cwd_hot_wet - avalanche_cwd_2022) / avalanche_aet_2022 -->
 
-elev_mat %>%
-    sphere_shade() %>%
-    add_overlay(topo_rgb_array, rescale_original = TRUE) %>%
-    add_shadow(ray_shadow, max_darken = 0.3) %>%
-    add_shadow(ambient_shadow, 0.3) %>%
-    add_overlay(generate_compass_overlay(heightmap = elev_mat)) %>%
-    add_overlay(generate_scalebar_overlay(extent = ext(avalanche_elev), length = 100, heightmap = elev_mat)) %>%
-    ##add_overlay(generate_polygon_overlay(avalanche_poly, extent = ext(avalanche_elev), heightmap = elev_mat)) %>%
-    plot_3d(heightmap = elev_mat, 
-            zscale = zscale,
-            solid = FALSE,
-            water = FALSE, 
-            fov = 0, 
-            theta = 0, 
-            zoom = 0.75, 
-            phi = 90,
-            background = "white")
+<!-- aet_hot_wet_plot <- ggplot() + -->
+<!--     ggnewscale::new_scale_fill() + -->
+<!--     geom_spatraster(data = avalanche_aet_hot_wet) + -->
+<!--     scale_fill_viridis_c(option = "D") + -->
+<!--     geom_sf(data = avalanche_poly, fill = NA, lwd = 1.5) + -->
+<!--     labs(title = "AET Hot-Wet ('Best-Case'/Highest)", x = "", y = "") + -->
+<!--     annotation_north_arrow(aes(location = "tr")) + -->
+<!--     annotation_scale(aes(location = "br")) -->
 
-render_camera(theta=0,phi=90,fov=60,zoom=0.6)
+<!-- aet_warm_dry_plot <- ggplot() + -->
+<!--     ggnewscale::new_scale_fill() + -->
+<!--     geom_spatraster(data = avalanche_aet_warm_dry) + -->
+<!--     scale_fill_viridis_c(option = "D") + -->
+<!--     geom_sf(data = avalanche_poly, fill = NA, lwd = 1.5) + -->
+<!--     labs(title = "AET Warm-Dry ('Worst-Case'/Lowest)", x = "", y = "") + -->
+<!--     annotation_north_arrow(aes(location = "tr")) + -->
+<!--     annotation_scale(aes(location = "br")) -->
 
-render_snapshot("snapshot.png",
-                software_render = TRUE,
-                width = width,
-                height = height)
+<!-- cwd_warm_dry_plot <- ggplot() + -->
+<!--     ggnewscale::new_scale_fill() + -->
+<!--     geom_spatraster(data = avalanche_cwd_warm_dry) + -->
+<!--     scale_fill_viridis_c(option = "B") + -->
+<!--     geom_sf(data = avalanche_poly, fill = NA, lwd = 1.5) + -->
+<!--     labs(title = "CWD Warm-Dry ('Best-Case'/Lowest)", x = "", y = "") + -->
+<!--     annotation_north_arrow(aes(location = "tr")) + -->
+<!--     annotation_scale(aes(location = "br")) -->
 
-### Save as object to render in browser
-save_obj("raster/avalanche_cwd_hot_dry.obj", save_texture = TRUE)
-```
+<!-- cwd_hot_dry_plot <- ggplot() + -->
+<!--     ggnewscale::new_scale_fill() + -->
+<!--     geom_spatraster(data = avalanche_cwd_hot_dry) + -->
+<!--     scale_fill_viridis_c(option = "B") + -->
+<!--     geom_sf(data = avalanche_poly, fill = NA, lwd = 1.5) + -->
+<!--     labs(title = "CWD Hot-Dry ('Worst-Case'/Highest)", x = "", y = "") + -->
+<!--     annotation_north_arrow(aes(location = "tr")) + -->
+<!--     annotation_scale(aes(location = "br")) -->
+
+<!-- ggarrange(aet_hot_wet_plot, aet_warm_dry_plot) -->
+<!-- ggarrange(cwd_warm_dry_plot, cwd_hot_dry_plot) -->
+
+<!-- ``` -->
+
+<!-- # Climate Summary -->
+
+<!-- ```{r, climate-summary, fig.height = 6, fig.width = 8, fig.cap = "Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"} -->
+<!-- aet_df <- as.data.frame(avalanche_aet_1988) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_2022)) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_warm_wet)) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_hot_wet)) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_warm_dry)) -->
+<!-- aet_df <- cbind(aet_df, as.data.frame(avalanche_aet_hot_dry)) -->
+<!-- names(aet_df) = c("AET_1988", "AET_2022", "AET_warm_wet", "AET_hot_wet", "AET_warm_dry", "AET_hot_dry") -->
+<!-- aet_df <- aet_df %>% -->
+<!--     pivot_longer(cols = 1:6) -->
+
+<!-- ggplot(aet_df) + -->
+<!--     geom_boxplot(aes(name, value)) + -->
+<!--     labs(title = "Avalanche East AET", x = "Scenario", y = "Annual AET (mm)") -->
+
+<!-- cwd_df <- as.data.frame(avalanche_cwd_1988) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_2022)) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_warm_wet)) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_hot_wet)) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_warm_dry)) -->
+<!-- cwd_df <- cbind(cwd_df, as.data.frame(avalanche_cwd_hot_dry)) -->
+<!-- names(cwd_df) = c("CWD_1988", "CWD_2022", "CWD_warm_wet", "CWD_hot_wet", "CWD_warm_dry", "CWD_hot_dry") -->
+<!-- cwd_df <- cwd_df %>% -->
+<!--     pivot_longer(cols = 1:6) -->
+
+<!-- ggplot(cwd_df) + -->
+<!--     geom_boxplot(aes(name, value)) + -->
+<!--     labs(title = "Avalanche East CWD", x = "Scenario", y = "Annual CWD (mm)") -->
+
+<!-- ``` -->
+
+<!-- ```{r, leaflet} -->
+<!-- library(viridis) -->
+
+<!-- s <- c(avalanche_cwd_1988, avalanche_cwd_2022, avalanche_cwd_warm_dry, avalanche_cwd_hot_dry) -->
+<!-- names(s) <- c("avalanche_cwd_1988", "avalanche_cwd_2022", "avalanche_cwd_warm_dry", "avalanche_cwd_hot_dry") -->
+
+<!-- plet(s, y = 1:4, tiles = "Esri.WorldImagery", alpha = 0.65, col = inferno(10), collapse = FALSE) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r, rayshader} -->
+<!-- library(rayshader) -->
+
+<!-- avalanche_cwd_hot_dry_rgb <- rast("raster/avalanche_cwd_hot_dry_rgb.tif") -->
+
+<!-- # breakout RGB layers -->
+<!-- names(avalanche_cwd_hot_dry_rgb) <- c("r", "g", "b", "x") -->
+<!-- topo_r <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$r) -->
+<!-- topo_g <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$g) -->
+<!-- topo_b <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$b) -->
+<!-- topo_rgb_array <- array(0, dim = c(nrow(topo_r), ncol(topo_r), 3)) -->
+<!-- topo_rgb_array[,,1] <- topo_r/255 -->
+<!-- topo_rgb_array[,,2] <- topo_g/255 -->
+<!-- topo_rgb_array[,,3] <- topo_b/255 -->
+<!-- topo_rgb_array <- aperm(topo_rgb_array, c(2,1,3)) -->
+
+<!-- dims <- dim(topo_rgb_array) -->
+<!-- width = dims[2] -->
+<!-- height = dims[1] -->
+
+<!-- zscale = 1 -->
+
+<!-- # rayshade -->
+<!-- elev_mat <- raster_to_matrix(avalanche_elev) -->
+<!-- elev_mat = resize_matrix(elev_mat, scale=1) -->
+<!-- ray_shadow <- ray_shade(elev_mat, sunaltitude = 30, zscale = zscale, multicore = TRUE) -->
+<!-- ambient_shadow <- ambient_shade(elev_mat, zscale = zscale) -->
+
+<!-- elev_mat %>% -->
+<!--     sphere_shade() %>% -->
+<!--     add_overlay(topo_rgb_array, rescale_original = TRUE) %>% -->
+<!--     add_shadow(ray_shadow, max_darken = 0.3) %>% -->
+<!--     add_shadow(ambient_shadow, 0.3) %>% -->
+<!--     add_overlay(generate_compass_overlay(heightmap = elev_mat)) %>% -->
+<!--     add_overlay(generate_scalebar_overlay(extent = ext(avalanche_elev), length = 100, heightmap = elev_mat)) %>% -->
+<!--     ##add_overlay(generate_polygon_overlay(avalanche_poly, extent = ext(avalanche_elev), heightmap = elev_mat)) %>% -->
+<!--     plot_3d(heightmap = elev_mat,  -->
+<!--             zscale = zscale, -->
+<!--             solid = FALSE, -->
+<!--             water = FALSE,  -->
+<!--             fov = 0,  -->
+<!--             theta = 0,  -->
+<!--             zoom = 0.75,  -->
+<!--             phi = 90, -->
+<!--             background = "white") -->
+
+<!-- render_camera(theta=0,phi=90,fov=60,zoom=0.6) -->
+
+<!-- render_snapshot("snapshot.png", -->
+<!--                 software_render = TRUE, -->
+<!--                 width = width, -->
+<!--                 height = height) -->
+
+<!-- ### Save as object to render in browser -->
+<!-- save_obj("raster/avalanche_cwd_hot_dry.obj", save_texture = TRUE) -->
+<!-- ``` -->
 
 # Export Files
 ```{r, export, eval = F, include = F}
 # Save files for Libby
 
-writeRaster(avalanche_aet_2022, "for_libby/avalanche_aet_2002-2022.tif", overwrite = TRUE)
-writeRaster(avalanche_cwd_2022, "for_libby/avalanche_cwd_2002-2022.tif", overwrite = TRUE)
-writeRaster(avalanche_aet_hot_wet_change, "for_libby/avalanche_aet_hot_wet_change.tif", overwrite = TRUE)
-writeRaster(avalanche_cwd_hot_dry_change, "for_libby/avalanche_cwd_hot_dry_change.tif", overwrite = TRUE)
-writeRaster(avalanche_aet_hot_wet, "for_libby/avalanche_aet_hot_wet.tif", overwrite = TRUE)
-writeRaster(avalanche_cwd_hot_dry, "for_libby/avalanche_cwd_hot_dry.tif", overwrite = TRUE)
+writeRaster(avalanche_aet_2022, "for_libby/avalanche/avalanche_aet_2002-2022.tif", overwrite = TRUE)
+writeRaster(avalanche_cwd_2022, "for_libby/avalanche/avalanche_cwd_2002-2022.tif", overwrite = TRUE)
+## writeRaster(avalanche_aet_hot_wet_change, "for_libby/avalanche_aet_hot_wet_change.tif", overwrite = TRUE)
+## writeRaster(avalanche_cwd_hot_dry_change, "for_libby/avalanche_cwd_hot_dry_change.tif", overwrite = TRUE)
+## writeRaster(avalanche_aet_hot_wet, "for_libby/avalanche_aet_hot_wet.tif", overwrite = TRUE)
+## writeRaster(avalanche_cwd_hot_dry, "for_libby/avalanche_cwd_hot_dry.tif", overwrite = TRUE)
 
 ```
 
