@@ -670,8 +670,8 @@ if __name__ == '__main__':
     slope = np.where(slope > 60, np.nan, slope) ## Slope is 0-60 for eq3 in McCune 2002
     slope = slope * (np.pi / 180)
 
-    height = elevation.shape[1]
-    width = elevation.shape[0]
+    height = elevation.shape[0]
+    width = elevation.shape[1]
     
     new_x, new_y = raster2xy(elev)
     ## Determine lat and lons from utm values
@@ -714,9 +714,9 @@ if __name__ == '__main__':
     leapyears = leapyearlist()       
     output_params = ['soil_water','PET','AET','Deficit','runoff','agdd','accumswe', 'rain']
     output_units = {'PET':'mm','AET':'mm','Deficit':'mm','accumswe':'mm','melt':'mm','days_snow':'mm','rain':'mm','water_input_to_soil':'mm','runoff':'mm','agdd':'C','accum_precip':'mm'}       
-    accum_precip = np.zeros((width,height)).astype(np.float32)
-    agdd = np.zeros((width,height)).astype(np.float32)
-    last_accumswe = np.zeros((width,height)).astype(np.float32)
+    accum_precip = np.zeros((height,width)).astype(np.float32)
+    agdd = np.zeros((height,width)).astype(np.float32)
+    last_accumswe = np.zeros((height,width)).astype(np.float32)
 
     latitude = (np.pi / 180) * new_lats
     if (np.nanmax(latitude) > 1.5) or (np.nanmin(latitude) < 0.1) : raise Exception('Latitude is not in radians or wrong file has been used. Terminating.')
@@ -727,7 +727,7 @@ if __name__ == '__main__':
     #Global vars used here to save duplication in memory associated with passing to funcs
     ##elevation = np.load(input_data_path + 'etopo1_aligned_array.npy') # In meters
     ##multiplier_mask = np.load(input_data_path + 'multiplier_mask.npz')['arr_0']
-    multiplier_mask = np.full((width, height), 1).astype(np.float32)
+    multiplier_mask = np.full((height, width), 1).astype(np.float32)
     if (np.nanmax(elevation) > 5700) or (np.nanmin(elevation) < 0): raise Exception('Do you have the wrong elevation file? Terminating.')
     ##heat_load = np.load(input_data_path + 'heat_load_based_on_etopo1.npy')
     ##soil_whc = get_soil_whc()
@@ -830,7 +830,7 @@ if __name__ == '__main__':
             agdd = agdd + gdd
             
            
-        if day_index == 0 + testing_offset and year == year_list[0]: accumswe = np.zeros((width,height)) # Set snow to zero everywhere for start of run. Note first year "Spin up" will not have accurate snow values so must consider only data beginning in start_year + 1.
+        if day_index == 0 + testing_offset and year == year_list[0]: accumswe = np.zeros((height, width)) # Set snow to zero everywhere for start of run. Note first year "Spin up" will not have accurate snow values so must consider only data beginning in start_year + 1.
         else: accumswe = est_snow()
         #Daylength is read from a daymet file. Every year of daymet dayl has the same data, so we have the year set permanently to 1980 here.
         if PET_type != 'oudin': daylength = get_param_one_day(1980, 'dayl', day_index)/3600.0 # Duration of daylight period. File is in seconds but converted to hours here. 
