@@ -93,7 +93,7 @@ make_collation <- function(options) {
   scenario <- options[4]
   site <- options[5]
 
-  script_data_dir <- file.path(glue("../data/StephenHuysman_GRTE_WBP_ModelingAreas/{site}/"))
+  script_data_dir <- file.path(glue("../data/input/{site}/"))
   input_data_dir <- file.path(glue("~/out/{site}/wb/"))
   output_data_dir <- file.path(glue("~/out/{site}/collated/"))
   reference <- rast(file.path(script_data_dir, "1980_dayl_resampled.nc4"))

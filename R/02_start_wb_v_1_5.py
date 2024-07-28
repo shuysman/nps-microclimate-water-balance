@@ -609,7 +609,7 @@ if __name__ == '__main__':
     
     input_data_path = f"/home/steve/out/{site}/daily-split/" ## daily-split directory with daily T/P layers
     output_data_path = f"/home/steve/out/{site}/wb/" ## Output Directory for daily water balance npz
-    site_data_path = f"../data/StephenHuysman_GRTE_WBP_ModelingAreas/{site}/"
+    site_data_path = f"../data/input/{site}/"
 
     print(f"Model: {model}, Scenario: {scenario}")
     print(f"Input dir: {input_data_path}")
