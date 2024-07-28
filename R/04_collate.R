@@ -70,7 +70,9 @@ make_spatraster <- function(f, var, year) {
   ## and date properly set
   ## npz files are daily arrays of water balance outputs
 
-  yday <- str_split_i(f, pattern = "_", i = 4) %>% as.numeric() + 1
+  yday <- str_split_i(f, pattern = "/", i = -1) %>%  ## Pick off base file name after directory /s
+    str_split_i(pattern = "_", i = 4) %>% ## Yday should be 4th element in filenames in output from collate script
+    as.numeric() + 1 ## Ydays are indexed at 0
   date <- as_date(glue("{year}-{yday}"), format = "%Y-%j")
 
   npz <- np$load(f)
