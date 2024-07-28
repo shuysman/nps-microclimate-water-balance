@@ -124,6 +124,9 @@ make_collation <- function(options) {
     ## file.remove(f)
   }
 
+  ## Fix NAs now so I don't have to later
+  output_rast <- subst(output_rast, -9999, NA)
+  
   writeCDF(output_rast, filename = out_file, overwrite = TRUE, compression = 3)
 
   ## rm(output_rast)
