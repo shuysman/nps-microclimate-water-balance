@@ -113,7 +113,7 @@ make_collation <- function(options) {
     crs = crs(reference),
     extent = ext(reference),
     resolution = res(reference)    
-    )
+  )
 
   in_files <- list.files(path = input_data_dir, pattern = glue("{model}_{scenario}_{year}_.*_{var}.npz"), full.names = TRUE) |> str_sort(numeric = TRUE)
 
