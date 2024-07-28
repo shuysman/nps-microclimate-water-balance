@@ -34,6 +34,7 @@ calc_annual_sum () {
     done
 
     cdo mergetime ${in_dir}/${model}_${scenario}_${var}*_sum.nc "${out_dir}/${model}_${scenario}_${var}_annual_sum.nc"
+    rm ${in_dir}/${model}_${scenario}_${var}_*_sum.nc
 }
 
 export -f calc_annual_sum
