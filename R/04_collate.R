@@ -15,12 +15,7 @@ terraOptions(verbose = TRUE,
 use_condaenv(condaenv = "nps-wb", conda = "auto", required = NULL)
 np <- import("numpy")
 
-script_data_dir <- file.path("../data/StephenHuysman_GRTE_WBP_ModelingAreas/static_basin/")
-input_data_dir <- file.path("~/out/static_east/wb")
-##input_data_dir <- file.path("/media/smithers/shuysman/data/out/nps-wb/avalanche/historical_025/")
-output_data_dir <- file.path("~/out/static_east/collated/")
-##output_data_dir <- file.path("/media/smithers/shuysman/data/out/nps-wb/avalanche/historical_025/collated/")
-reference <- rast(file.path(script_data_dir, "dem/static_east_dem_clipped_nad83.tif"))
+sites = c("static_west", "static_east", "avalanche", "surprise")
 
 historical_years <- 1979:2022 ## 2023 data is incomplete
 ## historical_years <- 2022
@@ -64,7 +59,7 @@ projection_models <- c(
 projection_scenarios <- c("rcp85", "rcp45")
 
 
-make_spatraster <- function(f, var, year) {
+make_spatraster <- function(f, var, year, reference) {
   ## Takes a filename f for a npz file generated from start_wb_v_1_5.py and
   ## creates a SpatRaster with crs and extent set from the reference
   ## and date properly set
@@ -96,33 +91,35 @@ make_collation <- function(options) {
   year <- options[2]
   model <- options[3]
   scenario <- options[4]
+  site <- options[5]
+
+  script_data_dir <- file.path(glue("../data/StephenHuysman_GRTE_WBP_ModelingAreas/{site}/"))
+  input_data_dir <- file.path(glue("~/out/{site}/wb/"))
+  output_data_dir <- file.path(glue("~/out/{site}/collated/"))
+  reference <- rast(file.path(script_data_dir, "1980_dayl_resampled.nc4"))
 
   out_file <- file.path(output_data_dir, glue("{model}_{scenario}_{var}_{year}.nc"))
   print(out_file)
 
   ## Fix missing files
-  if (file.exists(out_file)) {
-    print(glue("File exists {out_file}"))
-    return(2)
-  }
+  ## if (file.exists(out_file)) {
+  ##   print(glue("File exists {out_file}"))
+  ##   return(2)
+  ## }
 
   output_rast <- rast(
     nrows = nrow(reference),
     ncols = ncol(reference),
-    ## xmin = xmin(reference),
-    ## xmax = xmax(reference),
-    ## ymin = ymin(reference),
-    ## ymax = ymax(reference),
     crs = crs(reference),
     extent = ext(reference),
-    resolution = res(reference),
+    resolution = res(reference)    
     )
 
-  in_files <- str_subset(wb_files, pattern = glue("{model}_{scenario}_{year}_.*_{var}.npz")) |> str_sort(numeric = TRUE)
+  in_files <- list.files(path = input_data_dir, pattern = glue("{model}_{scenario}_{year}_.*_{var}.npz"), full.names = TRUE) |> str_sort(numeric = TRUE)
 
   for (f in in_files) {
     print(f)
-    new_rast <- make_spatraster(f, var, year)
+    new_rast <- make_spatraster(f, var, year, reference)
     add(output_rast) <- new_rast
     ## file.remove(f)
   }
@@ -133,14 +130,12 @@ make_collation <- function(options) {
   return(1)
 }
 
-
-wb_files <- list.files(input_data_dir, full.names = TRUE)
-
 historical_options <- expand.grid(
   var = keys(var_units),
   year = historical_years,
   model = historical_models,
-  scenario = historical_scenarios
+  scenario = historical_scenarios,
+  site = sites
 ) %>%
   t() %>%
   data.frame()
