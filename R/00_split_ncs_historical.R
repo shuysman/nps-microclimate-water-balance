@@ -5,11 +5,13 @@ library(parallel)
 
 terraOptions(verbose = TRUE)
 
-reference <- rast("../data/StephenHuysman_GRTE_WBP_ModelingAreas/static_basin/dem/static_east_dem_clipped_nad83.tif")
+site <- "holly_lake_small"
+
+reference <- rast(glue("../data/input/{site}/dem/dem_nad83.tif"))
 
 in_dir <- file.path("/media/smithers/shuysman/data/MACA/gye/historical/daily/")
-##in_dir <- file.path("~/data/MACA/gye/forecasts/daily/")
-out_dir <- file.path("~/out/static_east/daily-split/")
+## in_dir <- file.path("~/data/MACA/gye/forecasts/daily/")
+out_dir <- file.path(glue("~/out/{site}/daily-split/"))
 ##out_dir <- file.path("~/out/daily-split/")
 
 process_gcm <- function(options) {
