@@ -42,6 +42,9 @@ process_gcm <- function(options) {
                 filename = file.path(out_dir,
                                      glue("{n}_macav2metdata_{variable}_{gcm}_r1i1p1_{scenario}_{first_year}_{second_year}_GYE_daily_reprojected_with_extent{yday}_resampled.tif")),
                 overwrite = TRUE)
+
+    rm(lyr)
+    gc()
   }
 }
 
