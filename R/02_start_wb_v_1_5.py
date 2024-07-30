@@ -40,19 +40,21 @@ def open_tif(get_filename):
     final_array = np.where(final_array < -9000, np.nan,final_array)
     src_ds = None
 
-    return final_array
+    # return final_array
 
-    ### Hack to pick bottom left gridmet cell, which elevation approximately matches
-    ### the average for the burroughs site.  We are only doing this because
-    ### the burroughs site is much < than one gridmet cell in extent,
-    ### and is located at the corners of 4 gridmet cells so we get an ugly
-    ### grid across the whole site.  We are picking the cell that is closest to the
-    # ### average elev of the site.
-    # value = final_array[-10, 10] ## should be inside the bottom left grid cell
-    # shape = final_array.shape
-    # modified_array = np.full(shape, value)
+    ## Hack to pick bottom left gridmet cell, which elevation approximately matches
+    ## the average for the burroughs site.  We are only doing this because
+    ## the burroughs site is much < than one gridmet cell in extent,
+    ## and is located at the corners of 4 gridmet cells so we get an ugly
+    ## grid across the whole site.  We are picking the cell that is closest to the
+    ### average elev of the site.
 
-    # return(modified_array)
+    ##value = final_array[-10, 10] ## Burroughs - should be inside the bottom left grid cell
+    value = final_array[10, 10] ## Holly Lake Small - pick grid cell to top of site, which is closes in elev
+    shape = final_array.shape
+    modified_array = np.full(shape, value)
+
+    return(modified_array)
     
 
 def est_snow():
