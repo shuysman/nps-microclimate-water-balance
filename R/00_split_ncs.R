@@ -5,16 +5,18 @@ library(parallel)
 
 terraOptions(verbose = TRUE)
 
+site <- "holly_lake_small"
+
 ## r <- rast("/media/smithers/shuysman/data/MACA/gye/forecasts/daily/pr_BNU-ESM_rcp45_2006-2099_daily_gye.nc")
 
 ## reference <- rast("/home/steve/OneDrive/burroughs_wb/data/burroughs_creek_USGS1m_clipped_nad83.tif")
-reference <- rast("../data/StephenHuysman_GRTE_WBP_ModelingAreas/surprise/dem/surprise_USGS1m_nad83.tif")
+reference <- rast(glue("../data/input/{site}/dem/dem_nad83.tif"))
 
-##in_dir <- file.path("/media/smithers/shuysman/data/MACA/gye/forecasts/daily/")
+## in_dir <- file.path("/media/smithers/shuysman/data/MACA/gye/forecasts/daily/")
 in_dir <- file.path("~/data/MACA/gye/forecasts/daily/")
-##out_dir <- file.path("/media/smithers/shuysman/data/MACA/gye/forecasts/daily-split/")
-out_dir <- file.path("~/out/surprise/daily-split/")
-##out_dir <- file.path("/tmp/test/")
+## out_dir <- file.path("/media/smithers/shuysman/data/MACA/gye/forecasts/daily-split/")
+out_dir <- file.path(glue("~/out/{site}/daily-split/"))
+## out_dir <- file.path("/tmp/test/")
 
 process_gcm <- function(options) {
     variable <- options[1]
