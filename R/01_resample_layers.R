@@ -1,29 +1,32 @@
 library(tidyverse)
 library(sf)
 library(terra)
+library(glue)
 
-data_dir <- file.path("../data/Avalanche_East_Direct_Seeding/")
+site <- "holly_lake_small"
 
-reference <- rast(file.path(data_dir, "dem/avalanche_peak_USGS1m_clipped_nad83.tif"))
+data_dir <- file.path(glue("../data/input/{site}/"))
 
-dayl <- rast(file.path(data_dir, "1980_dayl_na.nc4"))
+reference <- rast(file.path(data_dir, "dem/dem_nad83.tif"))
+
+dayl <- rast(file.path("../data/1980_dayl_na.nc4"))
 dayl2 <- project(dayl, reference, method = "near")
 dayl2 <- resample(dayl2, reference, method = "near")
 dayl2 <- crop(dayl2, reference)
 
-writeCDF(dayl2, file.path(data_dir, "1980_dayl_surprise.nc4"), compression = 9, overwrite=TRUE)
+writeCDF(dayl2, file.path(data_dir, glue("1980_dayl_{site}.nc4")), compression = 9, overwrite = TRUE)
 
-t50 <- rast(file.path(data_dir, "merged_jennings2.tif"))
+t50 <- rast(file.path("../data/merged_jennings2.tif"))
 t50 <- project(subset(t50, 1), reference, method = "near")
 t50 <- resample(t50, reference, method = "near")
 t50 <- crop(t50, reference)
 
-writeRaster(t50, file.path(data_dir, "jennings_t50_coefficients_surprise.tif"), overwrite=TRUE)
+writeRaster(t50, file.path(data_dir, "jennings_t50_coefficients.tif"), overwrite=TRUE)
 
 
 # soils <- st_read("/home/steve/OneDrive/core_areas/data/StephenHuysman_GRTE_WBP_ModelingAreas/soil/grte_modelingareas_ssurgo.gpkg") %>% vect
 
-soils <- st_read(file.path(data_dir, "soil/ssurgo.gpkg")) %>% vect()
+soils <- st_read(file.path("../data/grte_modelingareas_ssurgo.gpkg")) %>% vect()
 
 ### The curve number generator ssurgo download tool in QGIS returns strings for soil AWS.
 ### R loads these as factors, and when multiplied by 10, you get the index of the string * 10 instead of
