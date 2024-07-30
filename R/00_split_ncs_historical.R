@@ -12,7 +12,11 @@ reference <- rast(glue("../data/input/{site}/dem/dem_nad83.tif"))
 in_dir <- file.path("/media/smithers/shuysman/data/MACA/gye/historical/daily/")
 ## in_dir <- file.path("~/data/MACA/gye/forecasts/daily/")
 out_dir <- file.path(glue("~/out/{site}/daily-split/"))
-##out_dir <- file.path("~/out/daily-split/")
+## out_dir <- file.path("~/out/daily-split/")
+
+if (!file.exists(out_dir)) {
+  dir.create(out_dir, recursive = TRUE)
+}
 
 process_gcm <- function(options) {
   variable <- options[1]
