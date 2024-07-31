@@ -60,11 +60,13 @@ def open_tif(get_filename):
 
     match site:
         case "burroughs":
+            print(f"Replacing climate data with cell -10,10")
             value = final_array[-10, 10] ## should be inside the bottom left grid cell
             shape = final_array.shape
             final_array = np.full(shape, value)
 
         case "holly_lake_small":
+            print(f"Replacing climate data with cell 10,10")
             value = final_array[10, 10] ## Holly Lake Small - pick grid cell to top of site, which is closes in elev
             shape = final_array.shape
             final_array = np.full(shape, value)
