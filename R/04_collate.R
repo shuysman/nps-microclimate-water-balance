@@ -105,7 +105,7 @@ make_collation <- function(options) {
     dir.create(output_data_dir)
   }
   
-  reference <- rast(file.path(script_data_dir, "dem/dem_nad83.nc4"))
+  reference <- rast(file.path(script_data_dir, "dem/dem_nad83.tif"))
 
   out_file <- file.path(output_data_dir, glue("{model}_{scenario}_{var}_{year}.nc"))
   print(out_file)
