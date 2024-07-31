@@ -31,7 +31,7 @@ np.seterr(divide = 'ignore') #could comment out for debugging if wish.
 
 
 def open_tif(get_filename):
-    global multiplier_mask
+    global multiplier_mask, site
     src_ds = gdal.Open(input_data_path + get_filename)
     src_band = src_ds.GetRasterBand(1) # Indexing starts with one rather than zero.
     array = src_band.ReadAsArray()
@@ -40,7 +40,6 @@ def open_tif(get_filename):
     final_array = np.where(final_array < -9000, np.nan,final_array)
     src_ds = None
 
-    # return final_array
 
     ## Hack to pick specific gridmet cell, which elevation
     ## approximately matches the average for the site. Some sites lay
@@ -59,13 +58,21 @@ def open_tif(get_filename):
     ## create logic in script to select gridmet cell with closes
     ## elevation then auto pull climate data for a point in that cell.
 
-    value = final_array[-10, 10] ## Burroughs - should be inside the bottom left grid cell
-    ##value = final_array[10, 10] ## Holly Lake Small - pick grid cell to top of site, which is closes in elev
-    shape = final_array.shape
-    modified_array = np.full(shape, value)
+    match site:
+        case "burroughs":
+            value = final_array[-10, 10] ## should be inside the bottom left grid cell
+            shape = final_array.shape
+            final_array = np.full(shape, value)
 
-    return(modified_array)
-    
+        case "holly_lake_small":
+            value = final_array[10, 10] ## Holly Lake Small - pick grid cell to top of site, which is closes in elev
+            shape = final_array.shape
+            final_array = np.full(shape, value)
+
+        case _:
+            pass
+
+    return final_array
 
 def est_snow():
     swe_m = melt_one_day()
