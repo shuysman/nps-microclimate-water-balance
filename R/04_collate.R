@@ -1,3 +1,7 @@
+## Usage
+## Rscript 04_collate.R {site} {period}
+## Rscript 04_collate.R holly_lake_small historical
+
 library(terra)
 library(glue)
 library(hash)
@@ -8,7 +12,7 @@ library(parallel)
 args = commandArgs(trailingOnly=TRUE)
 
 site <- args[1]
-period <- args[2]
+period <- args[2] ## historical or projection
 
 terraOptions(verbose = TRUE,
              memfrac = 0.9)
@@ -36,7 +40,7 @@ if (period == "historical") {
   years <- 1979:2022 ## 2023 data is incomplete
   models <- c("historical")
   scenarios <- c("gridmet")
-} else {
+} else if (period == "projection") {
   years <- 2006:2099
   models <- c(
     ## "bcc-csm1-1-m",
