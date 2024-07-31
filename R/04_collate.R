@@ -5,6 +5,8 @@ library(reticulate)
 library(tidyverse)
 library(parallel)
 
+args = commandArgs(trailingOnly=TRUE)
+
 site <- args[1]
 period <- args[2]
 
