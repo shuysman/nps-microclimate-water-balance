@@ -42,15 +42,25 @@ def open_tif(get_filename):
 
     # return final_array
 
-    ## Hack to pick bottom left gridmet cell, which elevation approximately matches
-    ## the average for the burroughs site.  We are only doing this because
-    ## the burroughs site is much < than one gridmet cell in extent,
-    ## and is located at the corners of 4 gridmet cells so we get an ugly
-    ## grid across the whole site.  We are picking the cell that is closest to the
-    ### average elev of the site.
+    ## Hack to pick specific gridmet cell, which elevation
+    ## approximately matches the average for the site. Some sites lay
+    ## at the intersection of several gridmet cells.  This creates a
+    ## cross pattern in the final water balance data, which is not
+    ## accurate to site conditions.  Choose the gridmet cell that is
+    ## closest in elevation to the average elevation of the site, then
+    ## subset the climate data to that cell and apply it to the whole
+    ## site.
+    ##
+    ## TODO: A better way to handle this would be to add a lat/long
+    ## argument to the script.  Then create 1D time series vectors of
+    ## T/P from gridMET and MACA.  Broadcast this 1D array into a
+    ## matrix with the shape of the DEM.  Users select which point to
+    ## use to model climate data for whole site before run or can
+    ## create logic in script to select gridmet cell with closes
+    ## elevation then auto pull climate data for a point in that cell.
 
-    ##value = final_array[-10, 10] ## Burroughs - should be inside the bottom left grid cell
-    value = final_array[10, 10] ## Holly Lake Small - pick grid cell to top of site, which is closes in elev
+    value = final_array[-10, 10] ## Burroughs - should be inside the bottom left grid cell
+    ##value = final_array[10, 10] ## Holly Lake Small - pick grid cell to top of site, which is closes in elev
     shape = final_array.shape
     modified_array = np.full(shape, value)
 
