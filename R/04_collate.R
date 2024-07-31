@@ -5,6 +5,9 @@ library(reticulate)
 library(tidyverse)
 library(parallel)
 
+site <- args[1]
+period <- args[2]
+
 terraOptions(verbose = TRUE,
              memfrac = 0.9)
 
@@ -14,12 +17,6 @@ terraOptions(verbose = TRUE,
 ### to georeference and collate them into netCDFs.
 use_condaenv(condaenv = "nps-wb", conda = "auto", required = NULL)
 np <- import("numpy")
-
-sites = c("static_west", "static_east", "avalanche", "surprise")
-
-historical_years <- 1979:2022 ## 2023 data is incomplete
-## historical_years <- 2022
-projection_years <- 2006:2099
 
 var_units <- hash(
   ##' soil_water' = "mm * 10",
@@ -32,31 +29,36 @@ var_units <- hash(
   ##' rain' = "mm * 10"
 )
 
-historical_models <- c("historical")
-historical_scenarios <- c("gridmet")
 
-projection_models <- c(
-  ## "bcc-csm1-1-m",
-  ## "bcc-csm1-1",
-  ## "BNU-ESM",
-  "CanESM2",
-  ## "CNRM-CM5",
-  ## "CSIRO-Mk3-6-0",
-  ## "GFDL-ESM2G",
-  ## "GFDL-ESM2M",
-  "HadGEM2-CC365",
-  ## "HadGEM2-ES365",
-  ## "inmcm4",
-  ## "IPSL-CM5A-LR",
-  ## "IPSL-CM5A-MR",
-  ## "IPSL-CM5B-LR",
-  ## "MIROC5",
-  ## "MIROC-ESM-CHEM",
-  ## "MIROC-ESM",
-  "MRI-CGCM3"
-  ## "NorESM1-M"
-)
-projection_scenarios <- c("rcp85", "rcp45")
+if (period == "historical") {
+  years <- 1979:2022 ## 2023 data is incomplete
+  models <- c("historical")
+  scenarios <- c("gridmet")
+} else {
+  years <- 2006:2099
+  models <- c(
+    ## "bcc-csm1-1-m",
+    ## "bcc-csm1-1",
+    ## "BNU-ESM",
+    "CanESM2",
+    ## "CNRM-CM5",
+    ## "CSIRO-Mk3-6-0",
+    ## "GFDL-ESM2G",
+    ## "GFDL-ESM2M",
+    "HadGEM2-CC365",
+    ## "HadGEM2-ES365",
+    ## "inmcm4",
+    ## "IPSL-CM5A-LR",
+    ## "IPSL-CM5A-MR",
+    ## "IPSL-CM5B-LR",
+    ## "MIROC5",
+    ## "MIROC-ESM-CHEM",
+    ## "MIROC-ESM",
+    "MRI-CGCM3"
+    ## "NorESM1-M"
+  )
+  scenarios <- c("rcp85", "rcp45")
+}
 
 
 make_spatraster <- function(f, var, year, reference) {
@@ -133,28 +135,18 @@ make_collation <- function(options) {
   return(1)
 }
 
-historical_options <- expand.grid(
+
+options <- expand.grid(
   var = keys(var_units),
-  year = historical_years,
-  model = historical_models,
-  scenario = historical_scenarios,
-  site = sites
+  year = years,
+  model = models,
+  scenario = scenarios,
+  site = site
 ) %>%
   t() %>%
   data.frame()
 
-mclapply(historical_options,
+mclapply(options,
          FUN = make_collation,
          mc.cores = 1
          )
-
-## projection_options <- expand.grid(var = keys(var_units),
-##                                   year = projection_years,
-##                                   model = projection_models,
-##                                   scenario = projection_scenarios) %>%
-##     t() %>%
-##     data.frame()
-
-## mclapply(projection_options,
-##          FUN = make_collation,
-##          mc.cores = 4)
