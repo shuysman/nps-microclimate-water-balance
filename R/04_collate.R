@@ -100,7 +100,12 @@ make_collation <- function(options) {
   script_data_dir <- file.path(glue("../data/input/{site}/"))
   input_data_dir <- file.path(glue("~/out/{site}/wb/"))
   output_data_dir <- file.path(glue("~/out/{site}/collated/"))
-  reference <- rast(file.path(script_data_dir, "1980_dayl_resampled.nc4"))
+
+  if (!dir.exists(output_data_dir)) {
+    dir.create(output_data_dir)
+  }
+  
+  reference <- rast(file.path(script_data_dir, "dem/dem_nad83.nc4"))
 
   out_file <- file.path(output_data_dir, glue("{model}_{scenario}_{var}_{year}.nc"))
   print(out_file)
