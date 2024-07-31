@@ -14,7 +14,7 @@ dayl2 <- project(dayl, reference, method = "near")
 dayl2 <- resample(dayl2, reference, method = "near")
 dayl2 <- crop(dayl2, reference)
 
-writeCDF(dayl2, file.path(data_dir, glue("1980_dayl_{site}.nc4")), compression = 9, overwrite = TRUE)
+writeCDF(dayl2, file.path(data_dir, glue("1980_dayl_resampled.nc4")), compression = 9, overwrite = TRUE)
 
 t50 <- rast(file.path("../data/merged_jennings2.tif"))
 t50 <- project(subset(t50, 1), reference, method = "near")
