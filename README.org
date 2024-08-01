@@ -6,6 +6,8 @@ dem, aspect, slope, hillshade layers are created manually, as well as soils gpkg
 run 01_resample_layers.R to create resampled versions of 1980_dayl (not needed? may be able to skip this file),
 jennings, soil_whc layers.
 
+
+#+begin_example
 burroughs/
 ├── 1980_dayl_resampled.nc4
 ├── dem
@@ -20,3 +22,4 @@ burroughs/
     ├── soil_whc_025.tif
     ├── soil_whc_100.tif
     └── ssurgo_soils.gpkg
+#+end_example
