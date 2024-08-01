@@ -1,5 +1,9 @@
 # 1m Water Balance model for WBP core area analysis
 
+
+https://github.com/user-attachments/assets/c366ca37-40a1-4cf6-9676-012ead12c62b
+
+
 # Site Setup
 Create a directory in data/input with the desired site name, i.e., `/data/input/holly_lake_small`
 Create subdirectories dem and soil
