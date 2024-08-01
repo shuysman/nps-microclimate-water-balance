@@ -394,62 +394,62 @@ ggplot() +
 <!-- ``` -->
 
 
-<!-- ```{r, rayshader} -->
-<!-- library(rayshader) -->
+```{r, rayshader}
+library(rayshader)
 
-<!-- avalanche_cwd_hot_dry_rgb <- rast("raster/avalanche_cwd_hot_dry_rgb.tif") -->
+avalanche_cwd_hot_dry_rgb <- rast("raster/avalanche_cwd_hot_dry_rgb.tif")
 
-<!-- # breakout RGB layers -->
-<!-- names(avalanche_cwd_hot_dry_rgb) <- c("r", "g", "b", "x") -->
-<!-- topo_r <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$r) -->
-<!-- topo_g <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$g) -->
-<!-- topo_b <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$b) -->
-<!-- topo_rgb_array <- array(0, dim = c(nrow(topo_r), ncol(topo_r), 3)) -->
-<!-- topo_rgb_array[,,1] <- topo_r/255 -->
-<!-- topo_rgb_array[,,2] <- topo_g/255 -->
-<!-- topo_rgb_array[,,3] <- topo_b/255 -->
-<!-- topo_rgb_array <- aperm(topo_rgb_array, c(2,1,3)) -->
+# breakout RGB layers
+names(avalanche_cwd_hot_dry_rgb) <- c("r", "g", "b", "x")
+topo_r <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$r)
+topo_g <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$g)
+topo_b <- rayshader::raster_to_matrix(avalanche_cwd_hot_dry_rgb$b)
+topo_rgb_array <- array(0, dim = c(nrow(topo_r), ncol(topo_r), 3))
+topo_rgb_array[,,1] <- topo_r/255
+topo_rgb_array[,,2] <- topo_g/255
+topo_rgb_array[,,3] <- topo_b/255
+topo_rgb_array <- aperm(topo_rgb_array, c(2,1,3))
 
-<!-- dims <- dim(topo_rgb_array) -->
-<!-- width = dims[2] -->
-<!-- height = dims[1] -->
+dims <- dim(topo_rgb_array)
+width = dims[2]
+height = dims[1]
 
-<!-- zscale = 1 -->
+zscale = 1
 
-<!-- # rayshade -->
-<!-- elev_mat <- raster_to_matrix(avalanche_elev) -->
-<!-- elev_mat = resize_matrix(elev_mat, scale=1) -->
-<!-- ray_shadow <- ray_shade(elev_mat, sunaltitude = 30, zscale = zscale, multicore = TRUE) -->
-<!-- ambient_shadow <- ambient_shade(elev_mat, zscale = zscale) -->
+# rayshade
+elev_mat <- raster_to_matrix(avalanche_elev)
+elev_mat = resize_matrix(elev_mat, scale=1)
+ray_shadow <- ray_shade(elev_mat, sunaltitude = 30, zscale = zscale, multicore = TRUE)
+ambient_shadow <- ambient_shade(elev_mat, zscale = zscale)
 
-<!-- elev_mat %>% -->
-<!--     sphere_shade() %>% -->
-<!--     add_overlay(topo_rgb_array, rescale_original = TRUE) %>% -->
-<!--     add_shadow(ray_shadow, max_darken = 0.3) %>% -->
-<!--     add_shadow(ambient_shadow, 0.3) %>% -->
-<!--     add_overlay(generate_compass_overlay(heightmap = elev_mat)) %>% -->
-<!--     add_overlay(generate_scalebar_overlay(extent = ext(avalanche_elev), length = 100, heightmap = elev_mat)) %>% -->
-<!--     ##add_overlay(generate_polygon_overlay(avalanche_poly, extent = ext(avalanche_elev), heightmap = elev_mat)) %>% -->
-<!--     plot_3d(heightmap = elev_mat,  -->
-<!--             zscale = zscale, -->
-<!--             solid = FALSE, -->
-<!--             water = FALSE,  -->
-<!--             fov = 0,  -->
-<!--             theta = 0,  -->
-<!--             zoom = 0.75,  -->
-<!--             phi = 90, -->
-<!--             background = "white") -->
+elev_mat %>%
+    sphere_shade() %>%
+    add_overlay(topo_rgb_array, rescale_original = TRUE) %>%
+    add_shadow(ray_shadow, max_darken = 0.3) %>%
+    add_shadow(ambient_shadow, 0.3) %>%
+    add_overlay(generate_compass_overlay(heightmap = elev_mat)) %>%
+    add_overlay(generate_scalebar_overlay(extent = ext(avalanche_elev), length = 100, heightmap = elev_mat)) %>%
+    ##add_overlay(generate_polygon_overlay(avalanche_poly, extent = ext(avalanche_elev), heightmap = elev_mat)) %>%
+    plot_3d(heightmap = elev_mat,
+            zscale = zscale,
+            solid = FALSE,
+            water = FALSE,
+            fov = 0,
+            theta = 0,
+            zoom = 0.75,
+            phi = 90,
+            background = "white")
 
-<!-- render_camera(theta=0,phi=90,fov=60,zoom=0.6) -->
+render_camera(theta=0,phi=90,fov=60,zoom=0.6)
 
-<!-- render_snapshot("snapshot.png", -->
-<!--                 software_render = TRUE, -->
-<!--                 width = width, -->
-<!--                 height = height) -->
+render_snapshot("snapshot.png",
+                software_render = TRUE,
+                width = width,
+                height = height)
 
-<!-- ### Save as object to render in browser -->
-<!-- save_obj("raster/avalanche_cwd_hot_dry.obj", save_texture = TRUE) -->
-<!-- ``` -->
+### Save as object to render in browser
+save_obj("raster/avalanche_cwd_hot_dry.obj", save_texture = TRUE)
+```
 
 # Export Files
 ```{r, export, eval = F, include = F}

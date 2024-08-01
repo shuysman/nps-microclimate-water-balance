@@ -164,6 +164,32 @@ ggplot() +
     annotation_scale(aes(location = "br"))
 ```
 
+
+```{r heat-load}
+library(reticulate)
+
+use_condaenv(condaenv = "nps-wb", conda = "auto", required = NULL)
+np <- import("numpy")
+
+hl_file <- file.path("./R/surprise-historical-gridmet-heatload.npz")
+npz <- np$load(hl_file)
+
+hl <- npz[["arr_0"]]
+
+hl_rast <- rast(hl,
+    crs = crs(surprise_elev),
+    extent = ext(surprise_elev)
+)
+
+ggplot() +
+    geom_spatraster(data = hl_rast) +
+    labs(title = "Surprise/Amphitheater Heatload") +
+    scale_fill_viridis_c(option = "F") +
+    geom_sf(data = surprise_poly, fill = NA, lwd = 1.5) +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+```
+
 ## Historical Water Balance
 
 ``` {r, surprise-historical}
@@ -360,6 +386,75 @@ ggplot() +
 <!--     labs(title = "Surprise East CWD", x = "Scenario", y = "Annual CWD (mm)") -->
 
 <!-- ``` -->
+
+```{r, rayshader}
+library(rayshader)
+
+surprise_satellite <- rast("raster/surprise_satellite.tif")
+surprise_cwd_2002_2022_rgb <- rast("raster/surprise_cwd_2002-2022.tif")
+
+surprise_elev_crop <- crop(surprise_elev, surprise_cwd_2002_2022_rgb)
+
+# breakout RGB layers
+names(surprise_cwd_2002_2022_rgb) <- c("r", "g", "b", "x")
+topo_r <- rayshader::raster_to_matrix(surprise_cwd_2002_2022_rgb$r)
+topo_g <- rayshader::raster_to_matrix(surprise_cwd_2002_2022_rgb$g)
+topo_b <- rayshader::raster_to_matrix(surprise_cwd_2002_2022_rgb$b)
+topo_rgb_array <- array(0, dim = c(nrow(topo_r), ncol(topo_r), 3))
+topo_rgb_array[,,1] <- topo_r/255
+topo_rgb_array[,,2] <- topo_g/255
+topo_rgb_array[,,3] <- topo_b/255
+topo_rgb_array <- aperm(topo_rgb_array, c(2,1,3))
+
+dims <- dim(topo_rgb_array)
+width = dims[2]
+height = dims[1]
+
+zscale = 1
+
+# rayshade
+elev_mat <- raster_to_matrix(surprise_elev_crop)
+elev_mat = resize_matrix(elev_mat, scale=1)
+ray_shadow <- ray_shade(elev_mat, sunaltitude = 30, zscale = zscale, multicore = TRUE)
+ambient_shadow <- ambient_shade(elev_mat, zscale = zscale)
+
+elev_mat %>%
+  sphere_shade() %>%
+  add_overlay(topo_rgb_array, rescale_original = TRUE) %>%
+  add_water(detect_water(elev_mat, min_area = 400), color = "paleturquoise") %>%
+  #add_shadow(ray_shadow, max_darken = 0.3) %>%
+  #add_shadow(ambient_shadow, 0.3) %>%
+  #add_overlay(generate_compass_overlay(heightmap = elev_mat)) %>%
+  #add_overlay(generate_scalebar_overlay(extent = ext(surprise_elev), length = 100, heightmap = elev_mat)) %>%
+  ##add_overlay(generate_polygon_overlay(surprise_poly, extent = ext(surprise_elev), heightmap = elev_mat)) %>%
+  plot_3d(heightmap = elev_mat,
+          zscale = zscale,
+          solid = TRUE,
+          water = TRUE,
+          waterdepth = 1,
+          fov = 0,
+          theta = 45,
+          zoom = 0.75,
+          phi = 45,
+          windowsize = c(1280, 1280),
+          background = "white")
+
+render_movie("raster/surprise.mp4", theta = 45, phi = 45, zoom = 0.75, fov = 0,
+             frames = 1080,
+             fps = 60,
+             height = 1280,
+             width = 1280)
+
+render_camera(theta=0,phi=90,fov=60,zoom=0.6)
+
+render_snapshot("snapshot.png",
+                software_render = TRUE,
+                width = width,
+                height = height)
+
+### Save as object to render in browser
+save_obj("raster/surprise_cwd_2002_2022.obj", save_texture = TRUE)
+```
 
 <!-- # Export Files -->
 ```{r, export, eval = F, include = F}
