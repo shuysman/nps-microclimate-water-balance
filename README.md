@@ -15,7 +15,7 @@ jennings, soil_whc layers.
 Add site id and lat long coordinates to `sites.csv`.  The whole site will be simulated with the climate at that point
 Run `00_clim_data.R` to pull climate data for that site.  
 
-	```
+```
 burroughs/
 ├── 1980_dayl_resampled.nc4
 ├── dem
@@ -30,6 +30,6 @@ burroughs/
     ├── soil_whc_025.tif
     ├── soil_whc_100.tif
     └── ssurgo_soils.gpkg
-	```
+```
 
 Example site data available at https://huysman.net/research/core_areas/data.zip
