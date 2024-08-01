@@ -28,5 +28,5 @@ hostname -s
 module load Mamba
 source $HOME/.bashrc
 mamba activate nps-wb
-parallel -j36 python 02_start_wb_v_1_5.py {} {} :::  CanESM2 HadGEM2-CC365 MRI-CGCM3 ::: rcp45 rcp85 ::: burroughs avalanche static_west static_east surprise holly_lake_small
+parallel -j36 python 02_start_wb_v_1_5.py {} :::  CanESM2 HadGEM2-CC365 MRI-CGCM3 ::: rcp45 rcp85 ::: burroughs avalanche static_west static_east surprise holly_lake_small
 date
