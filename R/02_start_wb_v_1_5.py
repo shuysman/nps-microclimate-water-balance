@@ -723,9 +723,6 @@ if __name__ == '__main__':
         current_date = datetime.datetime.strptime(dates[index],  "%Y-%m-%dT%H:%M:%SZ").date()
         year = current_date.year
 
-        if year > max_year:
-            break
-        
         if year > last_year:
             day_index = 0
             print(f"{last_year} complete")
