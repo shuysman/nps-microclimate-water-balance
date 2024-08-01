@@ -484,6 +484,7 @@ def write_daily_to_npz(model,scenario,param,data, output_mult_factor):
   
 
 def launch_new_collation(year, variable):
+    print(f"Collating {year} {variable}")
     collate_pool.apply_async(collate_into_netcdf, args = (year, variable))
     
 def collate_into_netcdf(year, variable):
@@ -535,14 +536,17 @@ def collate_into_netcdf(year, variable):
                  .rio.write_grid_mapping(inplace = True) \
                      .rio.write_coordinate_system(inplace = True)
 
-    print("Writing: " + output_data_path + f"/collated/{model}_{scenario}_{year}_{variable}.nc")
+    print("Writing: " + output_data_path + f"{model}_{scenario}_{year}_{variable}.nc")
     
     with xr.set_options(keep_attrs = True):
-        combined.to_netcdf(path = output_data_path + f"/collated/{model}_{scenario}_{year}_{variable}.nc",
+        combined.to_netcdf(path = output_data_path + f"{model}_{scenario}_{year}_{variable}.nc",
                            mode = "w",
                            engine = "netcdf4",
                            format = "NETCDF4",
                            )
+
+    for f in npz_files:
+        os.remove(f)
        
     
 def log_result(result):
@@ -584,7 +588,7 @@ if __name__ == '__main__':
     site = sys.argv[3]
     
     input_data_path = f"{os.environ['HOME']}/out/{site}/daily-split/" ## daily-split directory with daily T/P layers
-    output_data_path = f"{os.environ['HOME']}/out/test/{site}/wb/" ## Output Directory for daily water balance npz
+    output_data_path = f"{os.environ['HOME']}/out/{site}/wb/" ## Output Directory for daily water balance npz
     site_data_path = f"../data/input/{site}/"
 
     Path(output_data_path).mkdir(parents = True, exist_ok = True)
@@ -688,19 +692,24 @@ if __name__ == '__main__':
     
     log_file = open(f'{site}-{model}-{scenario}-logfile.csv','w')
 
-    climate_data = pd.read_csv("../data/climate/holly_lake_small_43.7922368_-110.8011392_macav2metdata_CanESM2_rcp45_2006_2099.csv")
-    pr_data = climate_data.pr_CanESM2_r1i1p1_rcp45
-    tmax_data = climate_data.tasmax_CanESM2_r1i1p1_rcp45
-    tmin_data = climate_data.tasmin_CanESM2_r1i1p1_rcp45
+    if model == "historical":
+        climate_data = pd.read_csv(site_data_path + "gridmet_1979_2023.csv")
+        year = 1979
+        pr_data = climate_data.pr
+        tmax_data = climate_data.tmmx
+        tmin_data = climate_data.tmmn
+    else:
+        climate_data = pd.read_csv(site_data_path + "macav2metdata_2006_2099.csv")
+        year = 2006
+        pr_data = climate_data.get(f"pr_{model}_r1i1p1_{scenario}")
+        tmax_data = climate_data.get(f"tasmax_{model}_r1i1p1_{scenario}")
+        tmin_data = climate_data.get(f"tasmin_{model}_r1i1p1_{scenario}")
+        
     dates = climate_data.date
 
     accumswe = np.zeros((height, width)) # Set snow to zero everywhere for start of run. Note first year "Spin up" will not have accurate snow values so must consider only data beginning in start_year + 1.
 
-    year = 2006
     day_index = 0
-
-    ## testing
-    max_year = 2010
 
     collate_pool = multiprocessing.Pool(processes = collate_cores)
     
@@ -755,7 +764,15 @@ if __name__ == '__main__':
         
         mp_write_daily()
 
-    collate_pool.terminate()
+
+    ### Collate last year, loop ends at max_year - 1
+    for variable in output_params:
+        print("Collating final year")
+        launch_new_collation(last_year, variable)
+
+    collate_pool.close()
+    collate_pool.join()
+
     log_file.close()
             
     print(bad_list)
