@@ -25,3 +25,5 @@ burroughs/
     ├── soil_whc_100.tif
     └── ssurgo_soils.gpkg
 #+end_example
+
+Example site data available at https://huysman.net/research/core_areas/data.zip
