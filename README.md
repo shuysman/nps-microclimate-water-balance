@@ -1,15 +1,17 @@
-* Site Setup
-Create a directory in data/input with the desired site name, i.e., "/data/input/holly_lake_small"
+# 1m Water Balance model for WBP core area analysis
+
+# Site Setup
+Create a directory in data/input with the desired site name, i.e., `/data/input/holly_lake_small`
 Create subdirectories dem and soil
 
 dem, aspect, slope, hillshade layers are created manually, as well as soils gpkg with soil polygons (in QGIS)
-run 01_resample_layers.R to create resampled versions of 1980_dayl (not needed? may be able to skip this file),
+run `01_resample_layers.R` to create resampled versions of `1980_dayl` (not needed? may be able to skip this file),
 jennings, soil_whc layers.
 
-Add site id and lat long coordinates to sites.csv.  The whole site will be simulated with the climate at that point
-Run 00_clim_data.R to pull climate data for that site.  
+Add site id and lat long coordinates to `sites.csv`.  The whole site will be simulated with the climate at that point
+Run `00_clim_data.R` to pull climate data for that site.  
 
-#+begin_example
+	```
 burroughs/
 ├── 1980_dayl_resampled.nc4
 ├── dem
@@ -24,6 +26,6 @@ burroughs/
     ├── soil_whc_025.tif
     ├── soil_whc_100.tif
     └── ssurgo_soils.gpkg
-#+end_example
+	```
 
 Example site data available at https://huysman.net/research/core_areas/data.zip
