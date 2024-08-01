@@ -765,7 +765,7 @@ if __name__ == '__main__':
     ### Collate last year, loop ends at max_year - 1
     for variable in output_params:
         print("Collating final year")
-        launch_new_collation(last_year, variable)
+        launch_new_collation(year, variable)
 
     collate_pool.close()
     collate_pool.join()
