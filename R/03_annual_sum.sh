@@ -10,8 +10,6 @@ vars="AET Deficit"
 models="historical"
 scenarios="gridmet"
 
-sites="avalanche surprise static_west static_east"
-
 calc_annual_sum () {
     model=$1
     scenario=$2
@@ -39,4 +37,4 @@ calc_annual_sum () {
 
 export -f calc_annual_sum
 
-parallel -j 4 calc_annual_sum {} ::: $models ::: $scenarios ::: $vars ::: $sites
+parallel -j 4 calc_annual_sum {} ::: $models ::: $scenarios ::: $vars ::: holly_lake_small

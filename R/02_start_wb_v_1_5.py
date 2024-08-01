@@ -15,20 +15,24 @@ This version reads the reprojected tif files from the MACA GCMs instead of dayme
 import datetime
 import itertools
 import multiprocessing
+import glob
 import os
 import pickle
 import sys
 import time
+from pathlib import Path
 
 import netCDF4
 import numpy as np
+import pandas as pd
+import xarray as xr
+import rioxarray
 import utm
 from osgeo import gdal
 
 np.seterr(invalid = 'ignore') #Don't let nans in rasters raise a warning.
 #np.seterr(over = 'ignore') #These have been checked and screen valid exceptions.
 np.seterr(divide = 'ignore') #could comment out for debugging if wish. 
-
 
 def open_tif(get_filename):
     global multiplier_mask, site
@@ -121,10 +125,7 @@ def get_latitude_radians(year,seed_param): # Returns 2D array of radian latitude
     infile.close()
     return (np.pi/180) * lat_degrees
     
-def get_tmean(tmin_name,tmax_name):
-    print(tmin_name, tmax_name)
-    tmax = open_tif(tmax_name)
-    tmin = open_tif(tmin_name)
+def get_tmean(tmin,tmax):
     tmax = tmax - 273.15 # MACA GCM data provide temperatures in degrees Kelvin
     tmin = tmin - 273.15
     tmean = (tmax + tmin) /2
@@ -467,41 +468,90 @@ def mp_write_daily(): # Subsets to just CONUS and multiplies the output_mult_fac
         for f in chunk:
             #output_chunk = var_dict[f][subsetting_indices[0][0]:subsetting_indices[0][1],subsetting_indices[1][0]:subsetting_indices[1][1]] # Subsetting spatially here to just CONUS
             output_chunk = var_dict[f]
-            p = multiprocessing.Process(target = write_daily_to_npz,args=(model,scenario,day_index,year,f,output_chunk,output_mult_factor))
+            p = multiprocessing.Process(target = write_daily_to_npz,args=(model,scenario,f,output_chunk,output_mult_factor))
             p.start()
             jobs.append(p)
         for j in jobs:
             j.join()
             
-def write_daily_to_npz(model,scenario,day,year,param,data, output_mult_factor):
-    filename = output_data_path + model + '_' + scenario + '_' + year + '_' + str(day) + '_' + param + '.npz'
+def write_daily_to_npz(model,scenario,param,data, output_mult_factor):
+    filename = output_data_path + model + '_' + scenario + '_' + param + '_' + str(current_date.year) + '_' + current_date.strftime("%j")  + '.npz'
     data = data * output_mult_factor
     if output_mult_factor > 1:
         data = np.round(data,0)
         data = np.where(np.isnan(data) == True, -9999, data)
     np.savez_compressed(filename, param = data)
+  
 
+def launch_new_collation(year, variable):
+    print(f"Collating {year} {variable}")
+    collate_pool.apply_async(collate_into_netcdf, args = (year, variable))
+    
+def collate_into_netcdf(year, variable):
+    global model, scenario, reference_ds
+    npz_files = glob.glob(output_data_path + f"{model}_{scenario}_{variable}_{year}_*.npz")
+    npz_files.sort()
+
+    signif_digits = 1
+   
+    encoding = {
+        'compression': 'zlib',
+        #'shuffle': True,
+        'complevel': 3,
+        #'fletcher32': False,
+        #'contiguous': False,
+        #'chunksizes': chunksizes
+        '_FillValue': -9999.0
+    }
+
+    dataarrays = []
+    
+    for file in npz_files:
+        ## Ex CanESM2_rcp45_AET_2006_006.npz
+        yday = file.split("_")[-1].split(".")[0]
+        file_date = datetime.datetime.strptime(f"{year}-{yday}", "%Y-%j")
+
+        arr = np.load(file)['param']
+        arr = np.around(arr, decimals = signif_digits)
+        if all_ints: 
+            arr = arr.astype('i2')
+            
+        da = xr.DataArray(data = arr,
+                          dims = ("y", "x"),
+                          coords = dict(
+                              x = ("x", reference_ds.x.data),
+                              y = ("y", reference_ds.y.data),
+                              time = ((), file_date),
+                          ),
+                          name = variable,
+                          attrs = dict(
+                              description=variable,
+                              units = "mm")
+                          )
+        da.encoding = encoding
+        dataarrays.append(da)
+
+    combined = xr.concat(dataarrays, dim = "time") \
+                 .rio.write_crs(str(reference_ds.rio.crs), inplace = True) \
+                 .rio.write_grid_mapping(inplace = True) \
+                     .rio.write_coordinate_system(inplace = True)
+
+    print("Writing: " + output_data_path + f"{model}_{scenario}_{year}_{variable}.nc")
+    
+    with xr.set_options(keep_attrs = True):
+        combined.to_netcdf(path = output_data_path + f"{model}_{scenario}_{year}_{variable}.nc",
+                           mode = "w",
+                           engine = "netcdf4",
+                           format = "NETCDF4",
+                           )
+
+    for f in npz_files:
+        os.remove(f)
+       
+    
 def log_result(result):
     global result_list
     result_list.append(result)
-
-'''    
-def Igrid_adjust_precip(p): # From Senay et al. pers. comm.
-    global Igrid
-    out_p = p * (1 - (Igrid/100))
-    return out_p
-'''
-
-def read_text_list(textfilename):
-    out = []
-    infile = open(textfilename, 'r')
-    for l in infile:
-        line = l.split(' ')
-        line = [x for x in line if x != '']
-        f = line[3]
-        out.append(f)
-    infile.close()
-    return out
         
 def strip_zip(s):
     if s.split('.')[-1].strip() == 'zip': out = s[:-5]
@@ -509,97 +559,6 @@ def strip_zip(s):
     else: out = s
     return out
 
-def set_filename_number(s, setval):
-    setval = str(setval)
-    sf = s.split('_')
-    sf[12] = 'extent{sv}'.format(sv = setval)
-    out = '_'.join(sf)
-    return out
-
-def set_param(s, setval):
-    sf = s.split('_')
-    sf[2] = setval
-    out = '_'.join(sf)
-    return out
-
-def read_dir():
-    global scenario, input_data_path
-    #print('***', input_data_path)
-    fl = os.listdir(input_data_path)
-    out = [x for x in fl if x.split('.')[-1] == 'tif']
-    return out
-
-def find_file_chunks(search_first_year, search_last_year, textfilename = 'null'): # For parsing filenames of GCM data
-    global web, model, scenario
-    chunk_list = []
-    sfy = int(search_first_year)
-    sly = int(search_last_year)
-    print('sfy = ', sfy, 'sly = ', sly)
-    if web == False: fl = read_text_list(textfilename)
-    else: fl = read_dir()
-    fl = [x for x in fl if x.split('_')[2] == 'pr'] # look at only one param, pr, for this screening
-    fl = [x for x in fl if x.split('_')[3] == model]
-    fl = [x for x in fl if x.split('_')[5] == scenario] 
-    fl.sort(key = lambda x: int(x.split("_")[0]))
-    
-    real_start_year = int(fl[0].split('_')[6])
-    real_end_year = int(fl[0].split('_')[7])
-    chunk_list = fl
-    return chunk_list, real_start_year, real_end_year
-
-def check_files_and_get_breaks(filename): #Numbers in returned year_breaks list indicate file number of first day in years, but 1 is not included. 
-    global web, textfilenamelist #So for 2006_2010 chunk, 2008 is the only leap and year breaks are [366,731,1097,1462], which means start of 2007 = file 366,2008 = 731, 2009 = 1097, 2010 = 1462
-    if web == False: fl = read_text_list(textfilenamelist)
-    else: fl = read_dir()
-    sf = filename.split('_')
-    first_year = sf[6]
-    second_year = sf[7]
-    leapyears = leapyearlist() 
-    years_in_file = list(range(int(first_year), int(second_year) + 1)) 
-    leaps_here = [x for x in years_in_file if x in leapyears]
-    number_of_leaps = len(leaps_here)
-    number_of_years = len(years_in_file)
-    number_of_files_in_this_chunk = (number_of_years * 365) + number_of_leaps
-    year_breaks = [] 
-    last_break = 1
-    for year in years_in_file:
-        if year in leapyears: leap_add = 1
-        else: leap_add = 0
-        next_break = last_break + 365 + leap_add
-        year_breaks.append(next_break)
-        last_break = next_break
-    year_breaks = year_breaks[:-1]
-    return number_of_files_in_this_chunk, year_breaks
-
-def create_tif_file_list(first_year, last_year):
-    #print('>>> ', first_year, last_year)
-    global maca_format_string, textfilenamelist
-    out_year_breaks = []
-    #out_file_list = []
-    ##chunk_list, real_start_year, real_end_year = find_file_chunks(first_year, last_year, textfilename = textfilenamelist)
-    chunk_list, real_start_year, real_end_year = find_file_chunks(first_year, last_year)
-    # for chunk in chunk_list:
-    #     num_files, year_breaks = check_files_and_get_breaks(chunk) 
-    #     out_year_breaks.append(year_breaks)
-        # for extentnum in range(1, num_files + 1):
-        #     this_filename = set_filename_number(chunk, extentnum)
-        #     out_file_list.append(this_filename)
-    # fl = os.listdir(input_data_path)
-    # missing_files = [x for x in out_file_list if x not in fl]
-    # if len(missing_files) > 0 and web == True: print('Missing these files: ', missing_files)
-    # return out_file_list, out_year_breaks, real_start_year, real_end_year
-
-    ## I can't get the original routine above to work with my files.  It seems to check that
-    ## all extra days in leap years are accounted for.  I don't think this should be
-    ## an issue using the aggregated daily gridMET/MACA files I'm using as input here
-    ## since they are just all days from 1979-2023 and 2006 to 2099.
-
-    num_files, year_breaks = check_files_and_get_breaks(chunk_list[0]) ## All chunks have the same year_breaks
-    for chunk in chunk_list:
-        out_year_breaks.append(year_breaks)
-
-    return chunk_list, out_year_breaks, real_start_year, real_end_year
-                  
 
 def pixel2coord(x, y, raster):
     """Returns global coordinates from pixel x, y coords"""
@@ -632,26 +591,17 @@ if __name__ == '__main__':
     output_data_path = f"{os.environ['HOME']}/out/{site}/wb/" ## Output Directory for daily water balance npz
     site_data_path = f"../data/input/{site}/"
 
+    Path(output_data_path).mkdir(parents = True, exist_ok = True)
+    
     print(f"Model: {model}, Scenario: {scenario}")
     print(f"Input dir: {input_data_path}")
     print(f"Output dir: {output_data_path}")
-    
-    maca_format_string = '{year_chunk}_macav2metdata_{param}_{model_name1}_{model_name2}_{scenario}_{year1}_{year2}_CONUS_dail_reprojected_with_extent{daynumber}_resampled.tif.zip'
-    
-    ##scenario = 'rcp85' # ******MUST SET THIS TO CORRECT VALUE BEFORE RUN *****
-    ##model = 'MIROC5'
-    # scenario = 'gridmet'
-    # model = 'historical'
 
     web = True
     npz_cores = 1
-        
-    #input_data_path = '/media/smithers/shuysman/data/out/nps-wb/static_west/daily-split/'
-    #input_data_path = '/home/steve/out/surprise/daily-split/'
-    #output_data_path = '/media/smithers/shuysman/data/out/nps-wb/static_west/wb/'
-    #output_data_path  = '/home/steve/out/surprise-test/wb/'
-    #input_data_path = os.path.join(os.environ['HOME'], 'out/surprise/daily-split/')
-    #output_data_path = os.path.join(os.environ['HOME'], 'out/surprise/wb/')
+    multiprocessing.set_start_method('fork')
+
+
     collate_cores = 4 # This can be raised once the model loops finish.
     first_day = 0
     last_day = 366
@@ -662,7 +612,7 @@ if __name__ == '__main__':
     else: textfilenamelist = 'null'
     start_time = time.time()  
     PET_type = 'oudin'
-    agdd_base = 10 # Degrees C
+    agdd_base = 5.5 # Degrees C
     end_times = []
     result_list = []
     first_year = 1950
@@ -677,6 +627,8 @@ if __name__ == '__main__':
     slope = gdal.Open(site_data_path + "dem/slope_nad83.tif").ReadAsArray()
     aspect = gdal.Open(site_data_path + "dem/aspect_nad83.tif").ReadAsArray()
 
+    reference_ds = rioxarray.open_rasterio(site_data_path + "dem/dem_nad83.tif")
+    
     ## Slope in radians, aspect in degrees
     ## Aspect is used to run old_aspect() which takes aspects
     ## in degrees and returns folded aspect in radians
@@ -699,41 +651,9 @@ if __name__ == '__main__':
     new_lats, new_lons = utm.to_latlon(new_x, new_y, 12, 'N')
     if (np.nanmax(new_lats) > 60) or (np.nanmin(new_lats) < 30) : raise Exception("Latitude outside of range for heatload function (30-60 degrees). Terminating.")
     
-    tif_list_file = f'{site}-{model}-{scenario}-listfile.txt'
-    yearbreaks_file = f'{site}-{model}-{scenario}-yearbreaks'
-    start_year_file = f'{site}-{model}-{scenario}-start_year.txt'
-    end_year_file = f'{site}-{model}-{scenario}-end_year.txt'
-
-    if not os.path.exists(tif_list_file):
-        ### create_tif_file_list takes so long to run.  Let's cache the results
-        ### in case we have to restart a run
-        tif_list, year_breaks, real_start_year, real_end_year = create_tif_file_list(first_year, last_year)
-        
-        with open(tif_list_file, 'w') as filehandle:
-            filehandle.writelines("%s\n" % t for t in tif_list)
-        with open(yearbreaks_file, 'wb') as filehandle:
-            pickle.dump(year_breaks, filehandle)
-        with open(start_year_file, 'w') as filehandle:
-            filehandle.writelines("%s\n" % real_start_year)
-        with open(end_year_file, 'w') as filehandle:
-            filehandle.writelines("%s\n" % real_end_year)    
-        
-    else:
-        with open(tif_list_file, 'r') as filehandle:
-            tif_list = filehandle.read().splitlines()
-        with open (yearbreaks_file, 'rb') as filehandle:
-            year_breaks = pickle.load(filehandle)
-        with open(start_year_file, 'r') as filehandle:
-            real_start_year = int(filehandle.read())
-        with open(end_year_file, 'r') as filehandle:
-            real_end_year = int(filehandle.read())
-        
-    years = list(range(int(real_start_year), int(real_end_year) + 1))
-    year_list = [str(x) for x in years]
-    #print(year_list)
     years_done = []
-    leapyears = leapyearlist()       
-    output_params = ['soil_water','PET','AET','Deficit','runoff','agdd','accumswe', 'rain']
+    ##output_params = ['soil_water','PET','AET','Deficit','runoff','agdd','accumswe', 'rain']
+    output_params = ['AET', 'Deficit']
     output_units = {'PET':'mm','AET':'mm','Deficit':'mm','accumswe':'mm','melt':'mm','days_snow':'mm','rain':'mm','water_input_to_soil':'mm','runoff':'mm','agdd':'C','accum_precip':'mm'}       
     accum_precip = np.zeros((height,width)).astype(np.float32)
     agdd = np.zeros((height,width)).astype(np.float32)
@@ -750,111 +670,83 @@ if __name__ == '__main__':
     ##multiplier_mask = np.load(input_data_path + 'multiplier_mask.npz')['arr_0']
     multiplier_mask = np.full((height, width), 1).astype(np.float32)
     if (np.nanmax(elevation) > 5700) or (np.nanmin(elevation) < 0): raise Exception('Do you have the wrong elevation file? Terminating.')
-    ##heat_load = np.load(input_data_path + 'heat_load_based_on_etopo1.npy')
-    ##soil_whc = get_soil_whc()
+
     soil_whc = gdal.Open(site_data_path + "soil/soil_whc_025.tif").ReadAsArray()
     if (np.nanmax(soil_whc) < 10) : raise Exception("Soil values appear to be in cm, convert to mm before use. Terminating") ### Soil values are between around 10-100mm for 25cm depths.  Need to adjust this if deeper soil depths are used
     soil_water = np.copy(soil_whc) # Initialize soil values at full.
-    #intercept_file = np.load('intercept1_from_senay.npz') # Vegetation intercept layer from Gabriel Senay et al. pers. comm.
-    #Igrid = intercept_file['intercept']
+
     ##snow_thresh_file = np.load(input_data_path + 'jennings_t50_coefficients.npz') # Jennings, K. et al. 2018. Spatial variation of the rain-snow temperature threshold across the northern hemisphere. Nature Communications 9: 1148. DOI: 10.1038/s41467-018-03629-7
     ##snow_thresh_temperatures = snow_thresh_file['t50']
     snow_thresh_temperatures = gdal.Open(site_data_path + "jennings_t50_coefficients.tif").ReadAsArray()
     low_thresh_temperatures = snow_thresh_temperatures - 3.0 # The Jennings coefficients are T50, i.e. where precip is half snow, half rain
     high_thresh_temperatures = snow_thresh_temperatures + 3.0 # This sets up a 6 degree span, which corresponds to the 1/6 = 0.167 precip fraction.
     
-    if PET_type == 'penman_montieth':
-        #slope = np.load('aligned_slope_in_radians.npy') # radians needed for numpy trig functions
-        #aspect = np.load('aligned_folded_aspect_in_radians.npy')
-        atmospheric_pressure = calc_atmospheric_pressure() # Used to calculate gamma. 
-        gamma = calc_gamma() 
+    # if PET_type == 'penman_montieth':
+    #     #slope = np.load('aligned_slope_in_radians.npy') # radians needed for numpy trig functions
+    #     #aspect = np.load('aligned_folded_aspect_in_radians.npy')
+    #     atmospheric_pressure = calc_atmospheric_pressure() # Used to calculate gamma. 
+    #     gamma = calc_gamma()
+    
     current_collate_year = 'null'    
     jobs = []
     
-    #-----------------------------------------------------
-    if web == False: testing_offset = 363
-    else: testing_offset = 0
-    file_index = 0 + testing_offset # The number of the file in tif_list
-    year_index = 0 # The number of the year in year_list
-    year = year_list[0]
-    extent_index = 1 + testing_offset# The number that appears after "extent" in the filenames
-    chunk_index = tif_list[0].split('_')[0] # The number appearing at the start of each tif filename
-    year_break_index = 0 # The set of year breaks, corresponding to file chunks, that we are currently using
-    day_index = 0 + testing_offset
     log_file = open(f'{site}-{model}-{scenario}-logfile.csv','w')
 
-    for tif in tif_list: 
-        current_pr_file = tif_list[file_index]
-        current_tmax_file = set_param(current_pr_file,'tmmx')
-        current_tmin_file = set_param(current_pr_file,'tmmn')
-        # new_chunk_index = current_pr_file.split('_')[0] # The number appearing at the start of each tif filename
-        # if new_chunk_index != chunk_index:
-        #     extent_index = 1
-        #     year_break_index +=1
-        #     chunk_index = new_chunk_index
-        #     year_index +=1
-        #     year = year_list[year_index]
-        #     day_index = 0
+    if model == "historical":
+        climate_data = pd.read_csv(site_data_path + "gridmet_1979_2023.csv")
+        year = 1979
+        pr_data = climate_data.pr
+        tmax_data = climate_data.tmmx
+        tmin_data = climate_data.tmmn
+    else:
+        climate_data = pd.read_csv(site_data_path + "macav2metdata_2006_2099.csv")
+        year = 2006
+        pr_data = climate_data.get(f"pr_{model}_r1i1p1_{scenario}")
+        tmax_data = climate_data.get(f"tasmax_{model}_r1i1p1_{scenario}")
+        tmin_data = climate_data.get(f"tasmin_{model}_r1i1p1_{scenario}")
         
-        # these_year_breaks = year_breaks[year_break_index]
-        # if extent_index in these_year_breaks:
-        #     year_index +=1 
-        #     year = year_list[year_index]
-        #     day_index = 0 + testing_offset
-        #     extent_index = extent_index + testing_offset
+    dates = climate_data.date
 
-        these_year_breaks = year_breaks[year_break_index]
-        if extent_index in these_year_breaks:
-            year_index +=1
-            year = year_list[year_index]
+    accumswe = np.zeros((height, width)) # Set snow to zero everywhere for start of run. Note first year "Spin up" will not have accurate snow values so must consider only data beginning in start_year + 1.
+
+    day_index = 0
+
+    collate_pool = multiprocessing.Pool(processes = collate_cores)
+    
+    for index in range(0, len(pr_data)):
+                
+        precip = np.full((height, width), pr_data[index])
+        tmax = np.full((height, width), tmax_data[index])
+        tmin = np.full((height, width), tmin_data[index])
+
+        last_year = year
+        current_date = datetime.datetime.strptime(dates[index],  "%Y-%m-%dT%H:%M:%SZ").date()
+        year = current_date.year
+
+        if year > last_year:
             day_index = 0
-            extent_index = extent_index + testing_offset
+            print(f"{last_year} complete")
+            years_done.append(last_year)
+            for variable in output_params:
+                    launch_new_collation(last_year, variable)
+                    
+        else:
+            day_index += 1
         
         var_dict = {}
-        if year in leapyears: leap_offset = 1
-        else: leap_offset = 0
-        print('Calculating: ',year, 'day = ', day_index)
-        outline = year + ',' + str(day_index) + ',' + str(extent_index) + ',' + current_pr_file + '\n'
-        log_file.write(outline)
+        print(f"Calculating {str(current_date)}, Day Index: {day_index}, Year: {year}")
+        log_file.write(str(current_date))
         
-        try:
-            tmean,tmax,tmin = get_tmean(current_tmin_file, current_tmax_file)
-        except:
-            print('Bad temperature file')
-            msg = 'bad temperature ' + current_tmin_file
-            bad_list.append(msg)
+        tmean,tmax,tmin = get_tmean(tmin, tmax)
             
         low_temperature_differences = tmean - low_thresh_temperatures
         
-        if day_index == 273 + leap_offset: # October 1 is the 274th day of the year and 275th in leap years. Indexes start at 0 so subtract one = 273.
-            try:
-                precip = open_tif(current_pr_file) # MACA precip is in mm.
-            except:
-                print('Bad pr file')
-                msg = 'bad pr ' + current_pr_file
-                bad_list.append(msg)
-            #precip = Igrid_adjust_precip(precip) # from v2 of model
-            accum_precip = precip
-            agdd = nonneg(tmean - agdd_base)
-        else:
-            try:
-                print('pr: ',current_pr_file)
-                precip = open_tif(current_pr_file)
-            except:
-                print('Bad pr file')
-                msg = 'bad pr ' + current_pr_file
-                bad_list.append(msg)
-                
-            #precip = Igrid_adjust_precip(precip) # from v2 of model
-            accum_precip = accum_precip + precip
-            gdd = nonneg(tmean - agdd_base)
-            agdd = agdd + gdd
-            
-           
-        if day_index == 0 + testing_offset and year == year_list[0]: accumswe = np.zeros((height, width)) # Set snow to zero everywhere for start of run. Note first year "Spin up" will not have accurate snow values so must consider only data beginning in start_year + 1.
-        else: accumswe = est_snow()
-        #Daylength is read from a daymet file. Every year of daymet dayl has the same data, so we have the year set permanently to 1980 here.
-        if PET_type != 'oudin': daylength = get_param_one_day(1980, 'dayl', day_index)/3600.0 # Duration of daylight period. File is in seconds but converted to hours here. 
+        accum_precip = accum_precip + precip
+        gdd = nonneg(tmean - agdd_base)
+        agdd = agdd + gdd
+        
+        accumswe = est_snow()
+
         PET = calc_todays_PET(PET_type)
         PET_adjusted = heat_load_adjust_pet()        
         snow_diff = accumswe - last_accumswe
@@ -868,10 +760,15 @@ if __name__ == '__main__':
         last_accumswe = accumswe
         
         mp_write_daily()
-        
-        day_index += 1
-        extent_index += 1
-        file_index += 1
+
+
+    ### Collate last year, loop ends at max_year - 1
+    for variable in output_params:
+        print("Collating final year")
+        launch_new_collation(year, variable)
+
+    collate_pool.close()
+    collate_pool.join()
 
     log_file.close()
             
