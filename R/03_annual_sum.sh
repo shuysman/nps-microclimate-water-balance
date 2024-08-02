@@ -24,12 +24,12 @@ calc_annual_sum () {
 	mkdir $out_dir    
     fi
 
-    for file in ${in_dir}/${model}_${scenario}_${var}_*.nc; do
+    for file in ${in_dir}/${model}_${scenario}_*_${var}.nc; do
 	cdo yearsum $file "${file}_sum.nc"
     done
 
-    cdo mergetime ${in_dir}/${model}_${scenario}_${var}*_sum.nc "${out_dir}/${model}_${scenario}_${var}_annual_sum.nc"
-    rm ${in_dir}/${model}_${scenario}_${var}_*_sum.nc
+    cdo mergetime ${in_dir}/${model}_${scenario}_*_${var}_sum.nc "${out_dir}/${model}_${scenario}_${var}_annual_sum.nc"
+    rm ${in_dir}/${model}_${scenario}_*_${var}_sum.nc
 }
 
 export -f calc_annual_sum
