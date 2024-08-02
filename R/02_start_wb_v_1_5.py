@@ -34,52 +34,6 @@ np.seterr(invalid = 'ignore') #Don't let nans in rasters raise a warning.
 #np.seterr(over = 'ignore') #These have been checked and screen valid exceptions.
 np.seterr(divide = 'ignore') #could comment out for debugging if wish. 
 
-def open_tif(get_filename):
-    global multiplier_mask, site
-    src_ds = gdal.Open(input_data_path + get_filename)
-    src_band = src_ds.GetRasterBand(1) # Indexing starts with one rather than zero.
-    array = src_band.ReadAsArray()
-    final_array = array * multiplier_mask
-    final_array = np.where(final_array > 9000, np.nan, final_array)
-    final_array = np.where(final_array < -9000, np.nan,final_array)
-    src_ds = None
-
-
-    ## Hack to pick specific gridmet cell, which elevation
-    ## approximately matches the average for the site. Some sites lay
-    ## at the intersection of several gridmet cells.  This creates a
-    ## cross pattern in the final water balance data, which is not
-    ## accurate to site conditions.  Choose the gridmet cell that is
-    ## closest in elevation to the average elevation of the site, then
-    ## subset the climate data to that cell and apply it to the whole
-    ## site.
-    ##
-    ## TODO: A better way to handle this would be to add a lat/long
-    ## argument to the script.  Then create 1D time series vectors of
-    ## T/P from gridMET and MACA.  Broadcast this 1D array into a
-    ## matrix with the shape of the DEM.  Users select which point to
-    ## use to model climate data for whole site before run or can
-    ## create logic in script to select gridmet cell with closes
-    ## elevation then auto pull climate data for a point in that cell.
-
-    match site:
-        case "burroughs":
-            print(f"Replacing climate data with cell -10,10")
-            value = final_array[-10, 10] ## should be inside the bottom left grid cell
-            shape = final_array.shape
-            final_array = np.full(shape, value)
-
-        case "holly_lake_small":
-            print(f"Replacing climate data with cell 10,10")
-            value = final_array[10, 10] ## Holly Lake Small - pick grid cell to top of site, which is closes in elev
-            shape = final_array.shape
-            final_array = np.full(shape, value)
-
-        case _:
-            pass
-
-    return final_array
-
 def est_snow():
     swe_m = melt_one_day()
     out_swe = accum_one_day(swe_m)
@@ -108,23 +62,7 @@ def namefixlen(v):
     while len(s) < 3:
         s = '0' + s
     return s
-
-def get_param_one_day(year, param, day_index): # Read Daymet netcdf files, get one day for specified param.
-    infile = netCDF4.Dataset(input_data_path + '{y}_{p}_static_west.nc4'.format(y = year, p = param))
-    data = np.ma.filled(infile.variables[param][day_index].astype(np.float32),np.nan)
-    #yearday = infile.variables['yearday'][:]
-    #if len(yearday) != 365: #Daymet files do not have leap year extra days, will always be 365.
-    #    print(year, param)
-    #    raise Exception('Terminating Program: Wrong number of days (not 365) in netcdf file!')
-    infile.close()
-    return data
-
-def get_latitude_radians(year,seed_param): # Returns 2D array of radian latitudes for every grid cell in current daymet file.
-    infile = netCDF4.Dataset(input_data_path + '{y}_{p}_static_west.nc4'.format(y = year, p = seed_param))
-    lat_degrees = infile.variables['lat'][:].astype(np.float32)
-    infile.close()
-    return (np.pi/180) * lat_degrees
-    
+ 
 def get_tmean(tmin,tmax):
     tmax = tmax - 273.15 # MACA GCM data provide temperatures in degrees Kelvin
     tmin = tmin - 273.15
@@ -136,22 +74,6 @@ def leapyearlist():
     leapyearlist=list(range(1804,2300,4))
     leapyearlist.remove(1900);leapyearlist.remove(2100);leapyearlist.remove(2200)
     return leapyearlist   
-
-def fix_len(s):
-    s = str(s)
-    if len(s) == 1: s = '0' + s
-    return s
-
-def convert_yday_to_date(year,yday): # Daymet always has 365 days in a year. On leap years, December 31 is discarded.
-    one_day = datetime.timedelta(days = 1)
-    year = int(year)
-    first_day_of_year = datetime.datetime(year = year,month = 1,day = 1)
-    this_day = first_day_of_year + (yday) * one_day
-    year = this_day.year
-    month = this_day.month
-    day = this_day.day
-    today = datetime.datetime(month = month,day = day, year = year)
-    return today
 
 def onlyabsneg(arr):
     ret = np.where(arr > 0,0,arr)
@@ -198,7 +120,6 @@ def calc_Rso(Ra): #CHECKS OK
     Rso = Ra * correction_term
     return Rso
     
-
 def calculate_Ra(inverse_rel_distance,sunset_hour_angle,latitude,solar_declination): #CHECKS OK
     #Ra = extra-terrestrial radiation in MJ/m2/day. Equation 21 of Ch3 FAO doc. Radiation hitting top of Earth's atmosphere.
     # Latitude (j) in radians. Positive for northern hemisphere and negative for southern hemisphere.
@@ -234,7 +155,6 @@ def calc_Rn(Rnl,Rs): # CHECKS OK
     Rn = Rns - Rnl
     return Rn
 
-             
 def calc_todays_PET(Et_type): 
     #print('Calculating PET')
     global tmax,tmin,tmean,precip,accumswe,year,day_index,daylength,latitude
@@ -548,18 +468,6 @@ def collate_into_netcdf(year, variable):
     for f in npz_files:
         os.remove(f)
        
-    
-def log_result(result):
-    global result_list
-    result_list.append(result)
-        
-def strip_zip(s):
-    if s.split('.')[-1].strip() == 'zip': out = s[:-5]
-    elif s.split('.')[-1] == 'zip': out = s[:-4]
-    else: out = s
-    return out
-
-
 def pixel2coord(x, y, raster):
     """Returns global coordinates from pixel x, y coords"""
     # GDAL affine transform parameters, According to gdal documentation xoff/yoff are image left corner, a/e are pixel wight/height and b/d is rotation and is zero if image is north up. 
@@ -574,15 +482,8 @@ def raster2xy(raster):
     rows, colms = raster.ReadAsArray().shape
     x, y = np.fromfunction(pixel2coord, shape = (rows, colms), raster = raster)
     return (x, y)
-    
 
 if __name__ == '__main__':
-    # If not using daymet swe, then add accumswe to output_params list. Otherwise, same output can be obtained from daymet source files.
-    #multiprocessing.log_to_stderr(logging.INFO)
-    
-    #MACA File Format = {YEAR_CHUNK}_macav2metdata_{PARAM}_{MODEL_PART1}_{MODEL_PART2}_{SCENARIO}_{FIRST_YEAR_OF_CHUNK}_{LAST_YEAR_OF_CHUNK}_CONUS_dail_reprojected_with_extent{DAYNUMBER}_resampled.tif
-    # _ Splits =               0           1           2         3           4              5              6                      7            8    9        10      11           12            13
-
     model = sys.argv[1]
     scenario = sys.argv[2]
     site = sys.argv[3]
@@ -599,13 +500,9 @@ if __name__ == '__main__':
 
     web = True
     npz_cores = 1
-    multiprocessing.set_start_method('fork')
-
-
+    multiprocessing.set_start_method('fork')  ## Fork is POSIX only, will not run on Windows
     collate_cores = 4 # This can be raised once the model loops finish.
-    first_day = 0
-    last_day = 366
-        
+
     melt_factor = 4.0
     precip_fraction = 0.167
     if web == False: textfilenamelist = 'canesm2_list.txt'
@@ -613,14 +510,8 @@ if __name__ == '__main__':
     start_time = time.time()  
     PET_type = 'oudin'
     agdd_base = 5.5 # Degrees C
-    end_times = []
-    result_list = []
-    first_year = 1950
-    last_year = 2099
-    next_collate_year = 'null'
     output_mult_factor = 10.0 # See def mp_write_daily(). For smaller file sizes, this multiplies all output values by 10 and stores them as 16 bit integer.
     all_ints = True # If True, all output netcdfs will be int16. If False, then categories in def launch_new_collation() are used.
-    bad_list = []
 
     elev = gdal.Open(site_data_path + "dem/dem_nad83.tif")
     elevation = elev.ReadAsArray()
@@ -651,7 +542,6 @@ if __name__ == '__main__':
     new_lats, new_lons = utm.to_latlon(new_x, new_y, 12, 'N')
     if (np.nanmax(new_lats) > 60) or (np.nanmin(new_lats) < 30) : raise Exception("Latitude outside of range for heatload function (30-60 degrees). Terminating.")
     
-    years_done = []
     ##output_params = ['soil_water','PET','AET','Deficit','runoff','agdd','accumswe', 'rain']
     output_params = ['AET', 'Deficit']
     output_units = {'PET':'mm','AET':'mm','Deficit':'mm','accumswe':'mm','melt':'mm','days_snow':'mm','rain':'mm','water_input_to_soil':'mm','runoff':'mm','agdd':'C','accum_precip':'mm'}       
@@ -687,7 +577,6 @@ if __name__ == '__main__':
     #     atmospheric_pressure = calc_atmospheric_pressure() # Used to calculate gamma. 
     #     gamma = calc_gamma()
     
-    current_collate_year = 'null'    
     jobs = []
     
     log_file = open(f'{site}-{model}-{scenario}-logfile.csv','w')
@@ -726,7 +615,6 @@ if __name__ == '__main__':
         if year > last_year:
             day_index = 0
             print(f"{last_year} complete")
-            years_done.append(last_year)
             for variable in output_params:
                     launch_new_collation(last_year, variable)
                     
@@ -772,5 +660,4 @@ if __name__ == '__main__':
 
     log_file.close()
             
-    print(bad_list)
     print('Done!!')
