@@ -2,7 +2,7 @@
 
 
 https://github.com/user-attachments/assets/c366ca37-40a1-4cf6-9676-012ead12c62b
-
+2002-2022 Average Annual Climatic Water Deficit - Surprise and Amphitheater, GRTE
 
 # Site Setup
 Create a directory in data/input with the desired site name, i.e., `/data/input/holly_lake_small`
