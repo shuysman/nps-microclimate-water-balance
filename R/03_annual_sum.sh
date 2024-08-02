@@ -28,8 +28,8 @@ calc_annual_sum () {
 	cdo yearsum $file "${file}_sum.nc"
     done
 
-    cdo mergetime ${in_dir}/${model}_${scenario}_*_${var}_sum.nc "${out_dir}/${model}_${scenario}_${var}_annual_sum.nc"
-    rm ${in_dir}/${model}_${scenario}_*_${var}_sum.nc
+    cdo mergetime ${in_dir}/${model}_${scenario}_*_${var}.nc_sum.nc "${out_dir}/${model}_${scenario}_${var}_annual_sum.nc"
+    rm ${in_dir}/${model}_${scenario}_*_${var}.nc_sum.nc
 }
 
 export -f calc_annual_sum
