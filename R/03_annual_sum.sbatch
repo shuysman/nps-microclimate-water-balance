@@ -28,5 +28,5 @@ hostname -s
 module load Mamba
 source $HOME/.bashrc
 mamba activate cdo
-./05_annual_sum.sh
+./03_annual_sum.sh
 date
