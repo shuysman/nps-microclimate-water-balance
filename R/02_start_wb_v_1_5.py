@@ -483,6 +483,44 @@ def raster2xy(raster):
     x, y = np.fromfunction(pixel2coord, shape = (rows, colms), raster = raster)
     return (x, y)
 
+def make_correction_factors(elevation_error):
+    ## Average of N/S lapse rates in Tercek 2021 paper
+    high_lapse_rates = (
+        ### Average N/S slopes then divide by 1000 to convert C/km to C/m
+        (-5.96 + -5.91) / 2000,
+        (-6.49 + -7.89) / 2000,
+        (-7.33 + -10.52) / 2000,
+        (-9.28 + -11.29) / 2000,
+        (-9.03 + -10.78) / 2000,
+        (-8.28 + -10.02) / 2000,
+        (-7.82 + -9.65) / 2000,
+        (-7.32 + -8.40) / 2000,
+        (-7.71 + -8.99) / 2000,
+        (-8.47 + -9.20) / 2000,
+        (-6.67 + -7.97) / 2000,
+        (-6.24 + -6.33) / 2000
+    )
+
+    low_lapse_rates = (
+        (-1.62 + -0.92) / 2000,
+        (-2.03 + -2.46) / 2000,
+        (-2.78 + -2.65) / 2000,
+        (-4.08 + -4.52) / 2000,
+        (-3.50 + -3.23) / 2000,
+        (-1.67 + -0.70) / 2000,
+        (-0.34 + -0.32) / 2000,
+        (-0.68 + 0.41) / 2000,
+        (-0.63 + -0.37) / 2000,
+        (-2.42 + -3.31) / 2000,
+        (-2.62 + -2.95) / 2000,
+        (-2.68 + -2.51) / 2000
+    )
+
+    high_correction_factors = list(map(lambda lapse: lapse * elevation_error, high_lapse_rates))
+    low_correction_factors = list(map(lambda lapse: lapse * elevation_error, low_lapse_rates))
+
+    return (high_correction_factors, low_correction_factors)
+  
 if __name__ == '__main__':
     model = sys.argv[1]
     scenario = sys.argv[2]
@@ -498,6 +536,13 @@ if __name__ == '__main__':
     print(f"Input dir: {input_data_path}")
     print(f"Output dir: {output_data_path}")
 
+    site_data = pd.read_csv("sites.csv")
+    site_data = site_data[site_data['site'] == site]
+    ### Get the elevation the metdata cell containing the site uses.
+    ### This will be compared with the "real" elevations from the DEM
+    ### to get an elevation error for lapse rate corrections
+    metdata_elev = site_data.values[0][3] ### ugly, need to learn how to lookup in pandas df or make a dict from the csv
+    
     web = True
     npz_cores = 1
     multiprocessing.set_start_method('fork')  ## Fork is POSIX only, will not run on Windows
@@ -515,6 +560,10 @@ if __name__ == '__main__':
 
     elev = gdal.Open(site_data_path + "dem/dem_nad83.tif")
     elevation = elev.ReadAsArray()
+    elevation_error = elevation - metdata_elev ## How much higher or lower input DEM is compared to metdata elevations
+
+    high_correction_factors, low_correction_factors = make_correction_factors(elevation_error)
+    
     slope = gdal.Open(site_data_path + "dem/slope_nad83.tif").ReadAsArray()
     aspect = gdal.Open(site_data_path + "dem/aspect_nad83.tif").ReadAsArray()
 
@@ -611,6 +660,7 @@ if __name__ == '__main__':
         last_year = year
         current_date = datetime.datetime.strptime(dates[index],  "%Y-%m-%dT%H:%M:%SZ").date()
         year = current_date.year
+        month = current_date.month
 
         if year > last_year:
             day_index = 0
@@ -624,7 +674,11 @@ if __name__ == '__main__':
         var_dict = {}
         print(f"Calculating {str(current_date)}, Day Index: {day_index}, Year: {year}")
         log_file.write(str(current_date))
-        
+
+        ## Lapse Rate Corrections
+        tmax = tmax + high_correction_factors[month - 1]
+        tmin = tmin + low_correction_factors[month - 1] 
+
         tmean,tmax,tmin = get_tmean(tmin, tmax)
             
         low_temperature_differences = tmean - low_thresh_temperatures
