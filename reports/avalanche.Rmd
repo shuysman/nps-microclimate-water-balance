@@ -459,8 +459,8 @@ ggplot(cwd_df) +
 
 writeRaster(avalanche_aet_2022, "../for_libby/avalanche/avalanche_aet_2002-2022.tif", overwrite = TRUE)
 writeRaster(avalanche_cwd_2022, "../for_libby/avalanche/avalanche_cwd_2002-2022.tif", overwrite = TRUE)
-writeRaster(avalanche_aet_hot_wet_change, "../for_libby/avalanche_aet_hot_wet_change.tif", overwrite = TRUE)
-writeRaster(avalanche_cwd_hot_dry_change, "../for_libby/avalanche_cwd_hot_dry_change.tif", overwrite = TRUE)
+writeRaster(avalanche_aet_hot_wet_change, "../for_libby/avalanche/avalanche_aet_hot_wet_change.tif", overwrite = TRUE)
+writeRaster(avalanche_cwd_hot_dry_change, "../for_libby/avalanche/avalanche_cwd_hot_dry_change.tif", overwrite = TRUE)
 writeRaster(avalanche_aet_hot_wet, "../for_libby/avalanche_aet_hot_wet.tif", overwrite = TRUE)
 writeRaster(avalanche_cwd_hot_dry, "../for_libby/avalanche_cwd_hot_dry.tif", overwrite = TRUE)
 
