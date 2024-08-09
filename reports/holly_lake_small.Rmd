@@ -397,7 +397,7 @@ ggplot(cwd_df) +
 ```
 
 <!-- # Export Files -->
-```{r, export, eval = F, include = F}
+```{r, export, eval = T, include = F}
 # Save files for Libby
 
 writeRaster(holly_lake_small_aet_2022, "../for_libby/holly_lake_small/holly_lake_small_aet_2002-2022.tif", overwrite = TRUE)
