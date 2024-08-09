@@ -11,5 +11,5 @@ done
 
 cd ../for_libby/
 rm grte_yell_wb.zip
-zip grte_yell_wb.zip */*.tif
+zip -9 grte_yell_wb.zip */*.tif
 cd ../reports/
