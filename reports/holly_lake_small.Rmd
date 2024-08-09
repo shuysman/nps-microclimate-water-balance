@@ -1,0 +1,419 @@
+---
+title: "Holly Lake (Small)"
+author: 
+  - Stephen Huysman, shuysman@gmail.com
+email: "shuysman@gmail.com"
+date: "`r Sys.Date()`"
+bibliography: library.bib
+csl: global-ecology-and-biogeography.csl
+link-citations: true
+output:
+  bookdown::html_document2:
+    theme: cerulean
+    number_sections: true
+    toc: true
+---
+
+```{r setup, include=FALSE}
+## Global options
+knitr::opts_chunk$set(echo = F, warning = F, message = F, fig.height = 8, fig.width = 10)
+
+```
+
+# Introduction
+
+A fine-scale (1-meter resolution) water balance model was developed to examine the influence of fine-scale variation in soils and topography on climate at sites selected for planting and direct seeding of whitebark pine.  The climatic water balance accounts for the simultaneous availability of water and energy as well as the influence of terrain and soils on climate in a way that is proximal to the biophysical environment experienced by plants [@stephensonActualEvapotranspirationDeficit1998].  This report focuses on two measures from the climatic water balance - Actual Evapotranspiration (AET), which represents the length and magnitude of growing conditions favorable to plants, and Climatic Water Deficit (CWD), which is a measure of drought stress representing plant water demands unmet by available water.
+
+The climatic water balance has been used to understand environmental variability within relatively coarse climate grid cells to accurately model plant distributions [@lutzClimaticWaterDeficit2010].  Fine-scale terrain features have been shown to reveal patterns in the water balance across the landscape that are masked by coarser digital elevation models (DEM), such as the persistence of fine-scale mesic habitat under climate projections using fine-scale LiDAR DEM data compared with the coarser 30m SRTM DEM [@dyerGISBasedWaterBalance2019].  The USGS 1m LiDAR product was selected for this study.
+
+Climate data for historical periods is sourced from the gridMET climate dataset [@abatzoglouDevelopmentGriddedSurface2013], and climate projections from the MACA dataset [@abatzoglouComparisonStatisticalDownscaling2012].  MACA projections are downscaled using gridMET data, so data from the two models are directly comparable without bias correction [@tercekRobustProjectionsConsequences2023].  
+
+Several caveats for the interpretation and use of these data exist.  The climatic water balance model takes inputs of terrain, soils, temperature, and precipitation, and differences in these inputs can result in non-linear changes in the results of the model.  Temperature and precipitation data are not available at high-resolutions in this study system and all available gridded climate data products have a large amount of uncertainty in areas of complex topography such as mountains regions.  Gridded climate products assign an elevation to each grid cell, which can vary considerably from the actual elevation of any point within the cell, with commensurate influence on the accuracy of the temperature estimates for any point within that grid cell [@tercekCorrectlyApplyingLapse2021].  Relative patterns in the water balance across the landscape can be determined with good certainty, while absolute measures of AET and CWD at any given point are highly uncertain.  However, even relative patterns in the landscape are subject to fine-scale patterns that are not modeled here such as temperature inversions, cold air drainage, and snow-drift. Any use of this model needs to be carefully considered with this uncertainty in mind against actual patterns observed in the field.  Relative importance of AET and CWD to vegetation on the site will also depend on whether the location is energy- or water-limited. 
+
+Future studies can improve on the models here by incorporating more accurate estimates of temperature and precipitation in mountainous terrain.  Low-cost temperature dataloggers can be deployed to obtain more accurate temperature estimates that account for fine-scale patterns such as cold air drainage and temperature inversions [@holdenEmpiricalDownscalingDaily2011].  
+
+All images can be clicked to open full-sized.
+
+```{r}
+library(terra)
+library(tidyverse)
+library(tidyterra)
+library(ggspatial)
+library(ggnewscale)
+library(ggpubr)
+library(gghighlight)
+library(sf)
+
+terraOptions(progress = 0)
+
+grte_polys <- st_read("../data/StephenHuysman_GRTE_WBP_ModelingAreas/GRTE_WBP_ModelingAreas_merged.shp")
+
+historical <- 1979:2022
+load_historical <- function(filename) {
+    r <- rast(filename)
+    r <- r %>%
+        clamp(lower = 0, values = FALSE) / 10 ## remove NAs and divide by ten (nps gridded wb is provided in units x 10)
+    return(r)
+}
+
+end <- 2075:2099
+load_gcm_mean <- function(filename) {
+    r <- rast(filename)
+    r <- r %>%
+        subset(year(time(.)) %in% end) %>% ## Limit to end-century conditions
+        mean() %>%
+        clamp(lower = 0, values = FALSE) / 10 ## remove NAs and divide by ten (nps gridded wb is provided in units x 10)
+    return(r)
+}
+```
+
+# Core Areas
+
+``` {r, core-areas, fig.cap = "YELL and GRTE Core Areas in WBP Climate Space.  This figure shows historical (2000-2019) AET/CWD average annual sums for known WBP occurences from the WPBR monitoring dataset.  Historical data for points within the GYE are highlighted in blue, the rest of the WBP range shown in grey.  Historical (green), RCP4.5 (darkviolet), and RCP8.5 (red) projections are also shown for the YELL and GRTE WBP core areas, as well as the Burroughs Creek planting site in the Shoshone NF.  RCP4.5 and RCP8.5 projections are ensemble averages provided by the 'summary layers' product from the NPS Gridded Water Balance dataset.  This figure visualizes the potential shifts in climate space that these sites could experience in the future, bracketed by the emission scenarios modeled under the RCP4.5 and RCP8.5 scenarios.  These data were generated from the 1km NPS gridded water balance model, and as such, absolute values of AET and CWD cannot be compared to the values generated from the 1m model presented here."}
+
+### Coordinates for WBP "core areas".  These were basically randomly sampled w/in the
+### polygons provided by YELL/GRTE
+coords <- tribble(
+    ~park, ~long, ~lat,
+    "avalanche", -110.134243, 44.483019,
+    "static_west", -110.807844, 43.675285,
+    ##"static_east", -110.8015687, 43.6752922,
+    "surprise", -110.7773406, 43.7295757,
+    "holly_lake_small", -110.802352, 43.792672,
+    "burroughs", -109.6778113, 43.7061975
+) %>% st_as_sf(coords = c("long", "lat"), crs = "EPSG:4326")
+
+aet_summary_dir <- file.path("/media/smithers/shuysman/data/nps_gridded_wb/summary_layers/AET/")
+cwd_summary_dir <- file.path("/media/smithers/shuysman/data/nps_gridded_wb/summary_layers/Deficit/")
+
+aet_hist <- rast(file.path(aet_summary_dir, "historical/V_1_5_annual_gridmet_historical_AET_2000_2019_annual_means_cropped_units_mm.tif"))
+names(aet_hist) <- "AET_hist"
+cwd_hist <- rast(file.path(cwd_summary_dir, "historical/V_1_5_annual_gridmet_historical_Deficit_2000_2019_annual_means_cropped_units_mm.tif"))
+names(cwd_hist) <- "CWD_hist"
+aet_45 <- rast(file.path(aet_summary_dir, "rcp45/ensembles/ensemble_2070_2099_annual_rcp45_AET_units_mm.tif"))
+names(aet_45) <- "AET_45"
+cwd_45 <- rast(file.path(cwd_summary_dir, "rcp45/ensembles/ensemble_2070_2099_annual_rcp45_Deficit_units_mm.tif"))
+names(cwd_45) <- "CWD_45"
+aet_85 <- rast(file.path(aet_summary_dir, "rcp85/ensembles/ensemble_2070_2099_annual_rcp85_AET_units_mm.tif"))
+names(aet_85) <- "AET_85"
+cwd_85 <- rast(file.path(cwd_summary_dir, "rcp85/ensembles/ensemble_2070_2099_annual_rcp85_Deficit_units_mm.tif"))
+names(cwd_85) <- "CWD_85"
+
+wbp_points <- read_csv("/home/steve/OneDrive/whitebark/blister-rust/ej/SITE_LOCATIONS.csv") %>%
+  drop_na(c("lat", "long")) %>%
+  st_as_sf(coords = c("long", "lat"), crs = st_crs("EPSG:4326")) %>%
+  bind_rows(coords) %>%
+  st_transform(crs = st_crs(aet_hist))
+
+wbp_points <- terra::extract(aet_hist, wbp_points, bind = TRUE)
+wbp_points <- terra::extract(cwd_hist, wbp_points, bind = TRUE)
+wbp_points <- terra::extract(aet_45, wbp_points, bind = TRUE)
+wbp_points <- terra::extract(cwd_45, wbp_points, bind = TRUE)
+wbp_points <- terra::extract(aet_85, wbp_points, bind = TRUE)
+wbp_points <- terra::extract(cwd_85, wbp_points, bind = TRUE)
+
+wbp_points %>%
+    ggplot() +
+    theme_bw() +
+    geom_point(aes(x = CWD_hist, y = AET_hist), color = "azure4") +
+    geom_point(data = filter(wbp_points, park == "GYE"), aes(x = CWD_hist, y = AET_hist), color = "deepskyblue3") +
+    geom_point(data = filter(wbp_points, park %in% coords$park), aes(x = CWD_hist, y = AET_hist, shape = park), size = 7, color = "green") +
+    geom_point(data = filter(wbp_points, park %in% coords$park), aes(x = CWD_45, y = AET_45, shape = park), size = 7, color = "darkviolet") +
+    geom_point(data = filter(wbp_points, park %in% coords$park), aes(x = CWD_85, y = AET_85, shape = park), size = 7, color = "red") +
+    labs(title = "YELL and GRTE WBP Core Areas in WBP 'Climate Space'", x = "CWD", y = "AET")
+
+```
+
+# Holly Lake (Small)
+
+## Topographic & Soil Features
+```{r static-west-poly, fig.cap = "Holly Lake (Small) Direct Seeding Polygon with Hillshade from 1m LiDAR DEM"}
+holly_lake_small_poly <- grte_polys[1,] %>% st_transform(crs = st_crs("EPSG:26912"))
+holly_lake_small_elev <- rast("../data/input/holly_lake_small/dem/dem_nad83.tif")
+holly_lake_small_slope <- rast("../data/input/holly_lake_small/dem/slope_nad83.tif")
+holly_lake_small_aspect <- rast("../data/input/holly_lake_small/dem/aspect_nad83.tif")
+holly_lake_small_hs <- rast("../data/input/holly_lake_small/dem/hillshade_nad83.tif")
+
+slope_mask <- subst(holly_lake_small_slope > 60, FALSE, NA) ## HL Function can't take inputs >60 degrees for slope
+soils <- st_read("data/input/soil/grte_modelingareas_ssurgo.shp")
+soil_mask <- soils %>% filter(is.na(aws025wta)) ### soil type with NA soil depth, screws up WB calculations
+
+pal_greys <- hcl.colors(1000, "Grays")
+ggplot() +
+    geom_spatraster(data = holly_lake_small_hs, show.legend = FALSE) +
+##    geom_spatraster(data = subset(tmmn$daily_minimum_temperature, 1)) +
+    scale_fill_gradientn(colors = pal_greys, na.value = NA) +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    labs(title = "Holly Lake (Small) with Hillshade") +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+```
+
+
+``` {r static-west-statistics,  warning = FALSE, message = FALSE, echo = FALSE}
+stats <- data.frame(elev_mean = zonal(holly_lake_small_elev, vect(holly_lake_small_poly), fun = "mean")[[1]],
+                         elev_max = zonal(holly_lake_small_elev, vect(holly_lake_small_poly), fun = "max")[[1]],
+                         elev_min = zonal(holly_lake_small_elev, vect(holly_lake_small_poly), fun = "min")[[1]],
+                         slope_mean = zonal(holly_lake_small_slope, vect(holly_lake_small_poly), fun = "mean", na.rm = TRUE)[[1]],
+                         slope_max = zonal(holly_lake_small_slope, vect(holly_lake_small_poly), fun = "max", na.rm = TRUE)[[1]],
+                         slope_min = zonal(holly_lake_small_slope, vect(holly_lake_small_poly), fun = "min", na.rm = TRUE)[[1]],
+                         aspect_mean = zonal(holly_lake_small_aspect, vect(holly_lake_small_poly), fun = "mean", na.rm = TRUE)[[1]]
+                    )
+knitr::kable(
+    stats,
+    digits = 2,
+    caption = "Topographic Statistics of Holly Lake (Small) Polygon")
+```
+
+```{r static-west-soil, fig.cap = "Holly Lake (Small) Soil Water Holding Capacity (WHC, mm) at 25 cm soil depth."}
+holly_lake_small_soil <- rast("../data/input/holly_lake_small/soil/soil_whc_025.tif")
+
+ggplot() +
+    geom_spatraster(data = holly_lake_small_soil) +
+    labs(title = "Holly Lake (Small) Soil WHC (mm) to 25cm soil depth", fill = "WHC (mm)") +
+    scale_fill_viridis_b() +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+```
+
+
+```{r heat-load}
+library(reticulate)
+
+use_condaenv(condaenv = "nps-wb", conda = "auto", required = NULL)
+np <- import("numpy")
+
+hl_file <- file.path("../R/holly_lake_small-historical-gridmet-heatload.npz")
+npz <- np$load(hl_file)
+
+hl <- npz[["arr_0"]]
+
+hl_rast <- rast(hl,
+    crs = crs(holly_lake_small_elev),
+    extent = ext(holly_lake_small_elev)
+)
+
+ggplot() +
+    geom_spatraster(data = hl_rast) +
+    labs(title = "Holly Lake (Small) Heatload") +
+    scale_fill_viridis_c(option = "F") +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+```
+
+## Historical Water Balance
+
+``` {r, static-west-historical}
+holly_lake_small_dir <- file.path("/media/smithers/shuysman/data/out/nps-wb/holly_lake_small/sums/")
+
+holly_lake_small_historical_aet <- load_historical(list.files(holly_lake_small_dir, pattern = "historical_gridmet_.*AET.*.nc", full.names = TRUE)) %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+holly_lake_small_historical_cwd <- load_historical(list.files(holly_lake_small_dir, pattern = "historical_gridmet_.*Deficit.*.nc", full.names = TRUE)) %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+
+holly_lake_small_aet_1988 <- holly_lake_small_historical_aet %>% subset(year(time(.)) == 1988) %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+holly_lake_small_cwd_1988 <- holly_lake_small_historical_cwd %>% subset(year(time(.)) == 1988) %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+
+holly_lake_small_aet_2022 <- holly_lake_small_historical_aet %>% subset(year(time(.)) >= 2002 & year(time(.)) <= 2022) %>% mean() %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+holly_lake_small_cwd_2022 <- holly_lake_small_historical_cwd %>% subset(year(time(.)) >= 2002 & year(time(.)) <= 2022) %>% mean() %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+```
+
+### Baseline
+
+Historical climate data are average across the years 2002-2022.  This
+represents historical "baseline" conditions against with other
+climatic summaries can be compared.
+
+```{r, static-west-baseline, fig.cap = "Holly Lake (Small) Historical Water Balance (2002-2022)"}
+
+ggplot() +
+    geom_spatraster(data = holly_lake_small_aet_2022) +
+    scale_fill_viridis_c(option = "D") +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    labs(title = "Holly Lake (Small) 2002-2022 Average Annual AET", x = "", y = "", fill = "AET (mm)") +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+
+ggplot() +
+    geom_spatraster(data = holly_lake_small_cwd_2022) +
+    scale_fill_viridis_c(option = "B") +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    labs(title = "Holly Lake (Small) 2002-2022 Average Annual CWD", x = "", y = "", fill = "CWD (mm)") +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+
+```
+
+### 1988 Drought Year
+
+1988 is selected as an example of a drought year for the location.
+This year was characterized by extreme drought levels leading to
+widespread wildfires across the GYE.  This serves as an example of an
+extreme year against which other climatic summaries can be compared.
+
+``` {r, static-west-drought-year, fig.cap="Holly Lake (Small) Drought Year (1988) annual AET and CWD"}
+
+ggplot() +
+    geom_spatraster(data = holly_lake_small_aet_1988) +
+    scale_fill_viridis_c(option = "D") +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    labs(title = "Holly Lake (Small) 1988 Annual AET (Drought Year)", x = "", y = "", fill = "AET (mm)") +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+
+ggplot() +
+    geom_spatraster(data = holly_lake_small_cwd_1988) +
+    scale_fill_viridis_c(option = "B") +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    labs(title = "Holly Lake (Small) 1988 Annual CWD (Drought Year)", x = "", y = "", fill = "CWD (mm)") +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+```
+
+
+## Projected Water Balance
+
+
+Four GCM/Emission Scenario combinations were selected to bracket the range of
+plausible future climates based on 'Warm/Wet', 'Warm/Dry', 'Hot/Wet',
+and 'Hot/Dry' scenarios determined by changes in annual Temperature
+and Precipitation.  These show the most extreme projections of future
+climate.  For visualizations of future AET and CWD, only the "best"
+and "worst" case scenarios are showing for the sake of brevity.
+Climate projections are summarized across the years 2075-2099 to
+represent "end-of-century" conditions.  Given the long amounts of time
+needed for WBP trees to reach reproductive maturity, this is
+approximately the time period that trees planted today would be
+producing cones.
+
+| Future   | GCM           | Scenario | Note                                                                  |
+|----------|---------------|----------|-----------------------------------------------------------------------|
+| Warm Wet | MRI-CGCM3     | RCP8.5   |                                                                       |
+| Hot Wet  | CanESM2       | RCP8.5   | 'Best-Case' AET Scenario (Highest)                                    |
+| Warm Dry | MRI-CGCM3     | RCP4.5   | 'Worse-Case' AET Scenario (Lowest), 'Best-Case' CWD Scenario (Lowest) |
+| Hot Dry  | HadGEM2-CC365 | RCP8.5   | 'Worse-Case' CWD Scenario (Highest)                                   |
+
+
+
+```{r, holly_lake_small-projections, fig.height = 8, fig.width = 16, fig.cap = "Projected Water Balance"}
+## best_case_aet: hot_wet
+## worse_case_aet: warm_dry
+## best_case_cwd: warm_dry
+## worst_case_cwd: hot_dry
+
+holly_lake_small_aet_warm_wet <- load_gcm_mean(file.path(holly_lake_small_dir, "MRI-CGCM3_rcp85_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+holly_lake_small_aet_hot_wet <- load_gcm_mean(file.path(holly_lake_small_dir,"CanESM2_rcp85_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+holly_lake_small_aet_warm_dry <- load_gcm_mean(file.path(holly_lake_small_dir, "MRI-CGCM3_rcp45_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+holly_lake_small_aet_hot_dry <- load_gcm_mean(file.path(holly_lake_small_dir,"HadGEM2-CC365_rcp85_AET_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+
+holly_lake_small_aet_warm_wet_change <- (holly_lake_small_aet_warm_wet - holly_lake_small_aet_2022) / holly_lake_small_aet_2022
+holly_lake_small_aet_hot_wet_change <- (holly_lake_small_aet_hot_wet - holly_lake_small_aet_2022) / holly_lake_small_aet_2022
+holly_lake_small_aet_warm_dry_change <- (holly_lake_small_aet_warm_dry - holly_lake_small_aet_2022) / holly_lake_small_aet_2022
+holly_lake_small_aet_hot_dry_change <- (holly_lake_small_aet_hot_dry - holly_lake_small_aet_2022) / holly_lake_small_aet_2022
+
+holly_lake_small_cwd_warm_dry <- load_gcm_mean(file.path(holly_lake_small_dir, "MRI-CGCM3_rcp45_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+holly_lake_small_cwd_hot_dry <- load_gcm_mean(file.path(holly_lake_small_dir,"HadGEM2-CC365_rcp85_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+holly_lake_small_cwd_warm_wet <- load_gcm_mean(file.path(holly_lake_small_dir, "MRI-CGCM3_rcp85_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+holly_lake_small_cwd_hot_wet <- load_gcm_mean(file.path(holly_lake_small_dir,"CanESM2_rcp85_Deficit_annual_sum.nc"))  %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+
+holly_lake_small_cwd_warm_dry_change <- (holly_lake_small_cwd_warm_dry - holly_lake_small_cwd_2022) / holly_lake_small_aet_2022
+holly_lake_small_cwd_hot_dry_change <- (holly_lake_small_cwd_hot_dry - holly_lake_small_cwd_2022) / holly_lake_small_aet_2022
+holly_lake_small_cwd_warm_wet_change <- (holly_lake_small_cwd_warm_wet - holly_lake_small_cwd_2022) / holly_lake_small_aet_2022
+holly_lake_small_cwd_hot_wet_change <- (holly_lake_small_cwd_hot_wet - holly_lake_small_cwd_2022) / holly_lake_small_aet_2022
+
+aet_hot_wet_plot <- ggplot() +
+    ggnewscale::new_scale_fill() +
+    geom_spatraster(data = holly_lake_small_aet_hot_wet) +
+    scale_fill_viridis_c(option = "D") +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    labs(title = "AET Hot-Wet ('Best-Case'/Highest)", x = "", y = "", fill = "AET (mm)") +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+
+aet_warm_dry_plot <- ggplot() +
+    ggnewscale::new_scale_fill() +
+    geom_spatraster(data = holly_lake_small_aet_warm_dry) +
+    scale_fill_viridis_c(option = "D") +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    labs(title = "AET Warm-Dry ('Worst-Case'/Lowest)", x = "", y = "", fill = "AET (mm)") +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+
+cwd_warm_dry_plot <- ggplot() +
+    ggnewscale::new_scale_fill() +
+    geom_spatraster(data = holly_lake_small_cwd_warm_dry) +
+    scale_fill_viridis_c(option = "B") +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    labs(title = "CWD Warm-Dry ('Best-Case'/Lowest)", x = "", y = "", fill = "CWD (mm)") +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+
+cwd_hot_dry_plot <- ggplot() +
+    ggnewscale::new_scale_fill() +
+    geom_spatraster(data = holly_lake_small_cwd_hot_dry) +
+    scale_fill_viridis_c(option = "B") +
+    geom_sf(data = holly_lake_small_poly, fill = NA, lwd = 1.5) +
+    labs(title = "CWD Hot-Dry ('Worst-Case'/Highest)", x = "", y = "", fill = "CWD (mm)") +
+    annotation_north_arrow(aes(location = "tr")) +
+    annotation_scale(aes(location = "br"))
+
+ggarrange(aet_hot_wet_plot, aet_warm_dry_plot)
+ggarrange(cwd_warm_dry_plot, cwd_hot_dry_plot)
+
+```
+
+
+## Climate Summary
+
+```{r, static-west-climate-summary, fig.height = 6, fig.width = 8, fig.cap = "Holly Lake (Small) Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"}
+aet_df <- as.data.frame(holly_lake_small_aet_1988)
+aet_df <- cbind(aet_df, as.data.frame(holly_lake_small_aet_2022))
+aet_df <- cbind(aet_df, as.data.frame(holly_lake_small_aet_warm_wet))
+aet_df <- cbind(aet_df, as.data.frame(holly_lake_small_aet_hot_wet))
+aet_df <- cbind(aet_df, as.data.frame(holly_lake_small_aet_warm_dry))
+aet_df <- cbind(aet_df, as.data.frame(holly_lake_small_aet_hot_dry))
+names(aet_df) = c("AET_1988", "AET_2022", "AET_warm_wet", "AET_hot_wet", "AET_warm_dry", "AET_hot_dry")
+aet_df <- aet_df %>%
+    pivot_longer(cols = 1:6)
+
+ggplot(aet_df) +
+    geom_boxplot(aes(name, value)) +
+    labs(title = "Holly_Lake_Small East AET", x = "Scenario", y = "Annual AET (mm)")
+
+cwd_df <- as.data.frame(holly_lake_small_cwd_1988)
+cwd_df <- cbind(cwd_df, as.data.frame(holly_lake_small_cwd_2022))
+cwd_df <- cbind(cwd_df, as.data.frame(holly_lake_small_cwd_warm_wet))
+cwd_df <- cbind(cwd_df, as.data.frame(holly_lake_small_cwd_hot_wet))
+cwd_df <- cbind(cwd_df, as.data.frame(holly_lake_small_cwd_warm_dry))
+cwd_df <- cbind(cwd_df, as.data.frame(holly_lake_small_cwd_hot_dry))
+names(cwd_df) = c("CWD_1988", "CWD_2022", "CWD_warm_wet", "CWD_hot_wet", "CWD_warm_dry", "CWD_hot_dry")
+cwd_df <- cwd_df %>%
+    pivot_longer(cols = 1:6)
+
+ggplot(cwd_df) +
+    geom_boxplot(aes(name, value)) +
+    labs(title = "Holly_Lake_Small East CWD", x = "Scenario", y = "Annual CWD (mm)")
+
+```
+
+<!-- # Export Files -->
+```{r, export, eval = F, include = F}
+# Save files for Libby
+
+writeRaster(holly_lake_small_aet_2022, "for_libby/holly_lake_small/holly_lake_small_aet_2002-2022.tif", overwrite = TRUE)
+writeRaster(holly_lake_small_cwd_2022, "for_libby/holly_lake_small/holly_lake_small_cwd_2002-2022.tif", overwrite = TRUE)
+## writeRaster(holly_lake_small_aet_hot_wet_change, "for_libby/holly_lake_small/holly_lake_small_aet_hot_wet_change.tif", overwrite = TRUE)
+## writeRaster(holly_lake_small_cwd_hot_dry_change, "for_libby/holly_lake_small/holly_lake_small_cwd_hot_dry_change.tif", overwrite = TRUE)
+writeRaster(holly_lake_small_aet_hot_wet, "for_libby/holly_lake_small/holly_lake_small_aet_hot_wet.tif", overwrite = TRUE)
+writeRaster(holly_lake_small_cwd_hot_dry, "for_libby/holly_lake_small/holly_lake_small_cwd_hot_dry.tif", overwrite = TRUE)
+
+```
+
+```{js, echo=FALSE}
+var elements = document.getElementsByTagName('img');
+for(var i = 0, len = elements.length; i < len; i++) {
+    elements[i].onclick = function () {
+        window.open(this.src, '_blank');
+    }
+}
+```
