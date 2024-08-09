@@ -188,7 +188,7 @@ library(reticulate)
 use_condaenv(condaenv = "nps-wb", conda = "auto", required = NULL)
 np <- import("numpy")
 
-hl_file <- file.path("../R/surprise-historical-gridmet-heatload.npz")
+hl_file <- file.path("../src/surprise-historical-gridmet-heatload.npz")
 npz <- np$load(hl_file)
 
 hl <- npz[["arr_0"]]
