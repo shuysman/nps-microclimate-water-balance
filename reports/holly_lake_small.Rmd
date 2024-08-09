@@ -135,7 +135,7 @@ holly_lake_small_aspect <- rast("../data/input/holly_lake_small/dem/aspect_nad83
 holly_lake_small_hs <- rast("../data/input/holly_lake_small/dem/hillshade_nad83.tif")
 
 slope_mask <- subst(holly_lake_small_slope > 60, FALSE, NA) ## HL Function can't take inputs >60 degrees for slope
-soils <- st_read("data/input/soil/grte_modelingareas_ssurgo.shp")
+soils <- st_read("../data/input/soil/grte_modelingareas_ssurgo.shp")
 soil_mask <- soils %>% filter(is.na(aws025wta)) ### soil type with NA soil depth, screws up WB calculations
 
 pal_greys <- hcl.colors(1000, "Grays")
@@ -400,12 +400,12 @@ ggplot(cwd_df) +
 ```{r, export, eval = F, include = F}
 # Save files for Libby
 
-writeRaster(holly_lake_small_aet_2022, "for_libby/holly_lake_small/holly_lake_small_aet_2002-2022.tif", overwrite = TRUE)
-writeRaster(holly_lake_small_cwd_2022, "for_libby/holly_lake_small/holly_lake_small_cwd_2002-2022.tif", overwrite = TRUE)
-## writeRaster(holly_lake_small_aet_hot_wet_change, "for_libby/holly_lake_small/holly_lake_small_aet_hot_wet_change.tif", overwrite = TRUE)
-## writeRaster(holly_lake_small_cwd_hot_dry_change, "for_libby/holly_lake_small/holly_lake_small_cwd_hot_dry_change.tif", overwrite = TRUE)
-writeRaster(holly_lake_small_aet_hot_wet, "for_libby/holly_lake_small/holly_lake_small_aet_hot_wet.tif", overwrite = TRUE)
-writeRaster(holly_lake_small_cwd_hot_dry, "for_libby/holly_lake_small/holly_lake_small_cwd_hot_dry.tif", overwrite = TRUE)
+writeRaster(holly_lake_small_aet_2022, "../for_libby/holly_lake_small/holly_lake_small_aet_2002-2022.tif", overwrite = TRUE)
+writeRaster(holly_lake_small_cwd_2022, "../for_libby/holly_lake_small/holly_lake_small_cwd_2002-2022.tif", overwrite = TRUE)
+writeRaster(holly_lake_small_aet_hot_wet_change, "../for_libby/holly_lake_small/holly_lake_small_aet_hot_wet_change.tif", overwrite = TRUE)
+writeRaster(holly_lake_small_cwd_hot_dry_change, "../for_libby/holly_lake_small/holly_lake_small_cwd_hot_dry_change.tif", overwrite = TRUE)
+writeRaster(holly_lake_small_aet_hot_wet, "../for_libby/holly_lake_small/holly_lake_small_aet_hot_wet.tif", overwrite = TRUE)
+writeRaster(holly_lake_small_cwd_hot_dry, "../for_libby/holly_lake_small/holly_lake_small_cwd_hot_dry.tif", overwrite = TRUE)
 
 ```
 

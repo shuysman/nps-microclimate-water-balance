@@ -138,7 +138,7 @@ static_east_hs <- rast("../data/input/static_east/dem/hillshade_nad83.tif")
 
 
 slope_mask <- subst(static_east_slope > 60, FALSE, NA) ## HL Function can't take inputs >60 degrees for slope
-soil_mask <- st_read("data/input/soil/grte_modelingareas_ssurgo.shp") %>% subset(fid %in% c(15, 16)) ### soil type with NA soil depth, screws up WB calculations
+soil_mask <- st_read("../data/input/soil/grte_modelingareas_ssurgo.shp") %>% subset(fid %in% c(15, 16)) ### soil type with NA soil depth, screws up WB calculations
 
 ggplot() +
     geom_spatraster(data = static_east_hs, show.legend = FALSE) +
@@ -377,12 +377,12 @@ ggplot(cwd_df) +
 ```{r, export, eval = T, include = F}
 # Save files for Libby
 
-writeRaster(static_east_aet_2022, "for_libby/static_east/static_east_aet_2002-2022.tif", overwrite = TRUE)
-writeRaster(static_east_cwd_2022, "for_libby/static_east/static_east_cwd_2002-2022.tif", overwrite = TRUE)
-## writeRaster(static_east_aet_hot_wet_change, "for_libby/static_east/static_east_aet_hot_wet_change.tif", overwrite = TRUE)
-## writeRaster(static_east_cwd_hot_dry_change, "for_libby/static_east/static_east_cwd_hot_dry_change.tif", overwrite = TRUE)
-writeRaster(static_east_aet_hot_wet, "for_libby/static_east/static_east_aet_hot_wet.tif", overwrite = TRUE)
-writeRaster(static_east_cwd_hot_dry, "for_libby/static_east/static_east_cwd_hot_dry.tif", overwrite = TRUE)
+writeRaster(static_east_aet_2022, "../for_libby/static_east/static_east_aet_2002-2022.tif", overwrite = TRUE)
+writeRaster(static_east_cwd_2022, "../for_libby/static_east/static_east_cwd_2002-2022.tif", overwrite = TRUE)
+writeRaster(static_east_aet_hot_wet_change, "../for_libby/static_east/static_east_aet_hot_wet_change.tif", overwrite = TRUE)
+writeRaster(static_east_cwd_hot_dry_change, "../for_libby/static_east/static_east_cwd_hot_dry_change.tif", overwrite = TRUE)
+writeRaster(static_east_aet_hot_wet, "../for_libby/static_east/static_east_aet_hot_wet.tif", overwrite = TRUE)
+writeRaster(static_east_cwd_hot_dry, "../for_libby/static_east/static_east_cwd_hot_dry.tif", overwrite = TRUE)
 
 ```
 
