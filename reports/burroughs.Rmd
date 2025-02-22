@@ -384,7 +384,7 @@ aet_df <- aet_df %>%
 
 ggplot(aet_df) +
     geom_boxplot(aes(name, value)) +
-    labs(title = "Burroughs East AET", x = "Scenario", y = "Annual AET (mm)")
+    labs(title = "Burroughs Creek AET", x = "Scenario", y = "Annual AET (mm)")
 
 cwd_df <- as.data.frame(burroughs_cwd_1988)
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_2022))
@@ -398,7 +398,7 @@ cwd_df <- cwd_df %>%
 
 ggplot(cwd_df) +
     geom_boxplot(aes(name, value)) +
-    labs(title = "Burroughs East CWD", x = "Scenario", y = "Annual CWD (mm)")
+    labs(title = "Burroughs Creek CWD", x = "Scenario", y = "Annual CWD (mm)")
 
 ```
 
