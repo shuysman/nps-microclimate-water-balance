@@ -16,7 +16,14 @@ output:
 
 ```{r setup, include=FALSE}
 ## Global options
-knitr::opts_chunk$set(echo = F, warning = F, message = F, fig.height = 8, fig.width = 10)
+knitr::opts_chunk$set(
+  echo = F,
+  warning = F,
+  message = F,
+  fig.height = 8,
+  fig.width = 10,
+  fig.path = paste0("/home/steve/OneDrive/core_areas/img/burroughs/")
+)
 
 ```
 # Introduction
