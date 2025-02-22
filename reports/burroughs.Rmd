@@ -98,7 +98,7 @@ names(aet_85) <- "AET_85"
 cwd_85 <- rast(file.path(cwd_summary_dir, "rcp85/ensembles/ensemble_2070_2099_annual_rcp85_Deficit_units_mm.tif"))
 names(cwd_85) <- "CWD_85"
 
-wbp_points <- read_csv("/home/steve/OneDrive/whitebark/blister-rust/ej/SITE_LOCATIONS.csv") %>%
+wbp_points <- read_csv("/home/steve/OneDrive/whitebark/blister-rust/data/SITE_LOCATIONS.csv") %>%
   drop_na(c("lat", "long")) %>%
   st_as_sf(coords = c("long", "lat"), crs = st_crs("EPSG:4326")) %>%
   bind_rows(coords) %>%
