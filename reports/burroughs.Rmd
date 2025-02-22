@@ -133,7 +133,7 @@ wbp_points %>%
 # Burroughs
 
 ## Topographic & Soil Features
-```{r static-west-poly, fig.cap = "Burroughs Direct Seeding Polygon with Hillshade from 1m LiDAR DEM"}
+```{r burroughs-poly, fig.cap = "Burroughs Direct Seeding Polygon with Hillshade from 1m LiDAR DEM"}
 burroughs_poly <- st_read("~/OneDrive/burroughs_wb/data/units/Possible_WBP_Units_Nancy_Updated.shp")
 burroughs_elev <- rast("../data/input/burroughs/dem/dem_nad83.tif")
 burroughs_slope <- rast("../data/input/burroughs/dem/slope_nad83.tif")
@@ -156,7 +156,7 @@ ggplot() +
 ```
 
 
-``` {r static-west-statistics,  warning = FALSE, message = FALSE, echo = FALSE}
+``` {r burroughs-statistics,  warning = FALSE, message = FALSE, echo = FALSE}
 stats <- data.frame(elev_mean = zonal(burroughs_elev, vect(burroughs_poly), fun = "mean")[[1]],
                          elev_max = zonal(burroughs_elev, vect(burroughs_poly), fun = "max")[[1]],
                          elev_min = zonal(burroughs_elev, vect(burroughs_poly), fun = "min")[[1]],
@@ -171,7 +171,7 @@ knitr::kable(
     caption = "Topographic Statistics of Burroughs Polygon")
 ```
 
-```{r static-west-soil, fig.cap = "Burroughs Soil Water Holding Capacity (WHC, mm) at 25 cm soil depth."}
+```{r burroughs-soil, fig.cap = "Burroughs Soil Water Holding Capacity (WHC, mm) at 25 cm soil depth."}
 burroughs_soil <- rast("../data/input/burroughs/soil/soil_whc_025.tif")
 
 ggplot() +
@@ -211,7 +211,7 @@ ggplot() +
 
 ## Historical Water Balance
 
-``` {r, static-west-historical}
+``` {r, burroughs-historical}
 burroughs_dir <- file.path("/media/smithers/shuysman/data/out/nps-wb/burroughs/sums/")
 
 burroughs_historical_aet <- load_historical(list.files(burroughs_dir, pattern = "historical_gridmet_.*AET.*.nc", full.names = TRUE)) %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
@@ -230,7 +230,7 @@ Historical climate data are average across the years 2002-2022.  This
 represents historical "baseline" conditions against with other
 climatic summaries can be compared.
 
-```{r, static-west-baseline, fig.cap = "Burroughs Historical Water Balance (2002-2022)"}
+```{r, burroughs-baseline, fig.cap = "Burroughs Historical Water Balance (2002-2022)"}
 
 ggplot() +
     geom_spatraster(data = clamp(burroughs_aet_2022, upper = 250, values = FALSE)) +
@@ -257,7 +257,7 @@ This year was characterized by extreme drought levels leading to
 widespread wildfires across the GYE.  This serves as an example of an
 extreme year against which other climatic summaries can be compared.
 
-``` {r, static-west-drought-year, fig.cap="Burroughs Drought Year (1988) annual AET and CWD"}
+``` {r, burroughs-drought-year, fig.cap="Burroughs Drought Year (1988) annual AET and CWD"}
 
 ggplot() +
     geom_spatraster(data = clamp(burroughs_aet_1988, upper = 200, values = FALSE)) +
@@ -371,7 +371,7 @@ ggarrange(cwd_warm_dry_plot, cwd_hot_dry_plot)
 
 ## Climate Summary
 
-```{r, static-west-climate-summary, fig.height = 6, fig.width = 8, fig.cap = "Burroughs Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"}
+```{r, burroughs-climate-summary, fig.height = 6, fig.width = 8, fig.cap = "Burroughs Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"}
 aet_df <- as.data.frame(burroughs_aet_1988)
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_2022))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_warm_wet))
