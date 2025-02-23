@@ -54,22 +54,25 @@ terraOptions(progress = 0)
 
 grte_polys <- st_read("../data/StephenHuysman_GRTE_WBP_ModelingAreas/GRTE_WBP_ModelingAreas_merged.shp")
 
+units <- st_read("../data/units/Possible_WBP_Units_Nancy_Updated.shp") %>% st_cast("MULTIPOLYGON")
+
+
 historical <- 1979:2022
 load_historical <- function(filename) {
-    r <- rast(filename)
-    r <- r %>%
-        clamp(lower = 0, values = FALSE) / 10 ## remove NAs and divide by ten (nps gridded wb is provided in units x 10)
-    return(r)
+  r <- rast(filename)
+  r <- r %>%
+    clamp(lower = 0, values = FALSE) / 10 ## remove NAs and divide by ten (nps gridded wb is provided in units x 10)
+  return(r)
 }
 
 end <- 2075:2099
 load_gcm_mean <- function(filename) {
-    r <- rast(filename)
-    r <- r %>%
-        subset(year(time(.)) %in% end) %>% ## Limit to end-century conditions
-        mean() %>%
-        clamp(lower = 0, values = FALSE) / 10 ## remove NAs and divide by ten (nps gridded wb is provided in units x 10)
-    return(r)
+  r <- rast(filename)
+  r <- r %>%
+    subset(year(time(.)) %in% end) %>% ## Limit to end-century conditions
+    mean() %>%
+    clamp(lower = 0, values = FALSE) / 10 ## remove NAs and divide by ten (nps gridded wb is provided in units x 10)
+  return(r)
 }
 ```
 
@@ -80,13 +83,13 @@ load_gcm_mean <- function(filename) {
 ### Coordinates for WBP "core areas".  These were basically randomly sampled w/in the
 ### polygons provided by YELL/GRTE
 coords <- tribble(
-    ~park, ~long, ~lat,
-    "avalanche", -110.134243, 44.483019,
-    "static_west", -110.807844, 43.675285,
-    ##"static_east", -110.8015687, 43.6752922,
-    "surprise", -110.7773406, 43.7295757,
-    "holly_lake_small", -110.802352, 43.792672,
-    "burroughs", -109.6778113, 43.7061975
+  ~park, ~long, ~lat,
+  "avalanche", -110.134243, 44.483019,
+  "static_west", -110.807844, 43.675285,
+  ##"static_east", -110.8015687, 43.6752922,
+  "surprise", -110.7773406, 43.7295757,
+  "holly_lake_small", -110.802352, 43.792672,
+  "burroughs", -109.6778113, 43.7061975
 ) %>% st_as_sf(coords = c("long", "lat"), crs = "EPSG:4326")
 
 aet_summary_dir <- file.path("/media/smithers/shuysman/data/nps_gridded_wb/summary_layers/AET/")
@@ -119,14 +122,14 @@ wbp_points <- terra::extract(aet_85, wbp_points, bind = TRUE)
 wbp_points <- terra::extract(cwd_85, wbp_points, bind = TRUE)
 
 wbp_points %>%
-    ggplot() +
-    theme_bw() +
-    geom_point(aes(x = CWD_hist, y = AET_hist), color = "azure4") +
-    geom_point(data = filter(wbp_points, park == "GYE"), aes(x = CWD_hist, y = AET_hist), color = "deepskyblue3") +
-    geom_point(data = filter(wbp_points, park %in% coords$park), aes(x = CWD_hist, y = AET_hist, shape = park), size = 7, color = "green") +
-    geom_point(data = filter(wbp_points, park %in% coords$park), aes(x = CWD_45, y = AET_45, shape = park), size = 7, color = "darkviolet") +
-    geom_point(data = filter(wbp_points, park %in% coords$park), aes(x = CWD_85, y = AET_85, shape = park), size = 7, color = "red") +
-    labs(title = "YELL and GRTE WBP Core Areas in WBP 'Climate Space'", x = "CWD", y = "AET")
+  ggplot() +
+  theme_bw() +
+  geom_point(aes(x = CWD_hist, y = AET_hist), color = "azure4") +
+  geom_point(data = filter(wbp_points, park == "GYE"), aes(x = CWD_hist, y = AET_hist), color = "deepskyblue3") +
+  geom_point(data = filter(wbp_points, park %in% coords$park), aes(x = CWD_hist, y = AET_hist, shape = park), size = 7, color = "green") +
+  geom_point(data = filter(wbp_points, park %in% coords$park), aes(x = CWD_45, y = AET_45, shape = park), size = 7, color = "darkviolet") +
+  geom_point(data = filter(wbp_points, park %in% coords$park), aes(x = CWD_85, y = AET_85, shape = park), size = 7, color = "red") +
+  labs(title = "YELL and GRTE WBP Core Areas in WBP 'Climate Space'", x = "CWD", y = "AET")
 
 ```
 
@@ -146,41 +149,45 @@ soil_mask <- soils %>% filter(is.na(aws025wta)) ### soil type with NA soil depth
 
 pal_greys <- hcl.colors(1000, "Grays")
 ggplot() +
-    geom_spatraster(data = burroughs_hs, show.legend = FALSE) +
-##    geom_spatraster(data = subset(tmmn$daily_minimum_temperature, 1)) +
-    scale_fill_gradientn(colors = pal_greys, na.value = NA) +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    labs(title = "Burroughs with Hillshade") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  geom_spatraster(data = burroughs_hs, show.legend = FALSE) +
+  ##    geom_spatraster(data = subset(tmmn$daily_minimum_temperature, 1)) +
+  scale_fill_gradientn(colors = pal_greys, na.value = NA) +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(title = "Burroughs with Hillshade") +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 ```
 
 
 ``` {r burroughs-statistics,  warning = FALSE, message = FALSE, echo = FALSE}
 stats <- data.frame(elev_mean = zonal(burroughs_elev, vect(burroughs_poly), fun = "mean")[[1]],
-                         elev_max = zonal(burroughs_elev, vect(burroughs_poly), fun = "max")[[1]],
-                         elev_min = zonal(burroughs_elev, vect(burroughs_poly), fun = "min")[[1]],
-                         slope_mean = zonal(burroughs_slope, vect(burroughs_poly), fun = "mean", na.rm = TRUE)[[1]],
-                         slope_max = zonal(burroughs_slope, vect(burroughs_poly), fun = "max", na.rm = TRUE)[[1]],
-                         slope_min = zonal(burroughs_slope, vect(burroughs_poly), fun = "min", na.rm = TRUE)[[1]],
-                         aspect_mean = zonal(burroughs_aspect, vect(burroughs_poly), fun = "mean", na.rm = TRUE)[[1]]
+                    elev_max = zonal(burroughs_elev, vect(burroughs_poly), fun = "max")[[1]],
+                    elev_min = zonal(burroughs_elev, vect(burroughs_poly), fun = "min")[[1]],
+                    slope_mean = zonal(burroughs_slope, vect(burroughs_poly), fun = "mean", na.rm = TRUE)[[1]],
+                    slope_max = zonal(burroughs_slope, vect(burroughs_poly), fun = "max", na.rm = TRUE)[[1]],
+                    slope_min = zonal(burroughs_slope, vect(burroughs_poly), fun = "min", na.rm = TRUE)[[1]],
+                    aspect_mean = zonal(burroughs_aspect, vect(burroughs_poly), fun = "mean", na.rm = TRUE)[[1]]
                     )
 knitr::kable(
-    stats,
-    digits = 2,
-    caption = "Topographic Statistics of Burroughs Polygon")
+  stats,
+  digits = 2,
+  caption = "Topographic Statistics of Burroughs Polygon")
 ```
 
 ```{r burroughs-soil, fig.cap = "Burroughs Soil Water Holding Capacity (WHC, mm) at 25 cm soil depth."}
 burroughs_soil <- rast("../data/input/burroughs/soil/soil_whc_025.tif")
 
 ggplot() +
-    geom_spatraster(data = burroughs_soil) +
-    labs(title = "Burroughs Soil WHC (mm) to 25cm soil depth", fill = "WHC (mm)") +
-    scale_fill_viridis_b() +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  geom_spatraster(data = burroughs_soil) +
+  labs(title = "Burroughs Soil WHC (mm) to 25cm soil depth", fill = "WHC (mm)") +
+  scale_fill_viridis_b() +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 ```
 
 
@@ -196,17 +203,19 @@ npz <- np$load(hl_file)
 hl <- npz[["arr_0"]]
 
 hl_rast <- rast(hl,
-    crs = crs(burroughs_elev),
-    extent = ext(burroughs_elev)
-)
+                crs = crs(burroughs_elev),
+                extent = ext(burroughs_elev)
+                )
 
 ggplot() +
-    geom_spatraster(data = hl_rast) +
-    labs(title = "Burroughs Heatload") +
-    scale_fill_viridis_c(option = "F") +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  geom_spatraster(data = hl_rast) +
+  labs(title = "Burroughs Heatload") +
+  scale_fill_viridis_c(option = "F") +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 ```
 
 ## Historical Water Balance
@@ -233,20 +242,24 @@ climatic summaries can be compared.
 ```{r, burroughs-baseline, fig.cap = "Burroughs Historical Water Balance (2002-2022)"}
 
 ggplot() +
-    geom_spatraster(data = clamp(burroughs_aet_2022, upper = 250, values = FALSE)) +
-    scale_fill_viridis_c(option = "D") +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    labs(title = "Burroughs 2002-2022 Average Annual AET", x = "", y = "", fill = "AET (mm)") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  geom_spatraster(data = clamp(burroughs_aet_2022, upper = 250, values = FALSE)) +
+  scale_fill_viridis_c(option = "D") +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(title = "Burroughs 2002-2022 Average Annual AET", x = "", y = "", fill = "AET (mm)") +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 
 ggplot() +
-    geom_spatraster(data = burroughs_cwd_2022) +
-    scale_fill_viridis_c(option = "B") +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    labs(title = "Burroughs 2002-2022 Average Annual CWD", x = "", y = "", fill = "CWD (mm)") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  geom_spatraster(data = burroughs_cwd_2022) +
+  scale_fill_viridis_c(option = "B") +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(title = "Burroughs 2002-2022 Average Annual CWD", x = "", y = "", fill = "CWD (mm)") +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 
 ```
 
@@ -260,20 +273,24 @@ extreme year against which other climatic summaries can be compared.
 ``` {r, burroughs-drought-year, fig.cap="Burroughs Drought Year (1988) annual AET and CWD"}
 
 ggplot() +
-    geom_spatraster(data = clamp(burroughs_aet_1988, upper = 200, values = FALSE)) +
-    scale_fill_viridis_c(option = "D") +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    labs(title = "Burroughs 1988 Annual AET (Drought Year)", x = "", y = "", fill = "AET (mm)") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  geom_spatraster(data = clamp(burroughs_aet_1988, upper = 200, values = FALSE)) +
+  scale_fill_viridis_c(option = "D") +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(title = "Burroughs 1988 Annual AET (Drought Year)", x = "", y = "", fill = "AET (mm)") +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 
 ggplot() +
-    geom_spatraster(data = burroughs_cwd_1988) +
-    scale_fill_viridis_c(option = "B") +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    labs(title = "Burroughs 1988 Annual CWD (Drought Year)", x = "", y = "", fill = "CWD (mm)") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  geom_spatraster(data = burroughs_cwd_1988) +
+  scale_fill_viridis_c(option = "B") +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(title = "Burroughs 1988 Annual CWD (Drought Year)", x = "", y = "", fill = "CWD (mm)") +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 ```
 
 
@@ -328,40 +345,48 @@ burroughs_cwd_warm_wet_change <- (burroughs_cwd_warm_wet - burroughs_cwd_2022) /
 burroughs_cwd_hot_wet_change <- (burroughs_cwd_hot_wet - burroughs_cwd_2022) / burroughs_aet_2022
 
 aet_hot_wet_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = clamp(burroughs_aet_hot_wet, upper = 500, values = FALSE)) +
-    scale_fill_viridis_c(option = "D") +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    labs(title = "AET Hot-Wet ('Best-Case'/Highest)", x = "", y = "", fill = "AET (mm)") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  ggnewscale::new_scale_fill() +
+  geom_spatraster(data = clamp(burroughs_aet_hot_wet, upper = 500, values = FALSE)) +
+  scale_fill_viridis_c(option = "D") +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(title = "AET Hot-Wet ('Best-Case'/Highest)", x = "", y = "", fill = "AET (mm)") +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 
 aet_warm_dry_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = clamp(burroughs_aet_warm_dry, upper = 300, values = FALSE)) +
-    scale_fill_viridis_c(option = "D") +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    labs(title = "AET Warm-Dry ('Worst-Case'/Lowest)", x = "", y = "", fill = "AET (mm)") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  ggnewscale::new_scale_fill() +
+  geom_spatraster(data = clamp(burroughs_aet_warm_dry, upper = 300, values = FALSE)) +
+  scale_fill_viridis_c(option = "D") +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(title = "AET Warm-Dry ('Worst-Case'/Lowest)", x = "", y = "", fill = "AET (mm)") +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 
 cwd_warm_dry_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = burroughs_cwd_warm_dry) +
-    scale_fill_viridis_c(option = "B") +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    labs(title = "CWD Warm-Dry ('Best-Case'/Lowest)", x = "", y = "", fill = "CWD (mm)") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  ggnewscale::new_scale_fill() +
+  geom_spatraster(data = burroughs_cwd_warm_dry) +
+  scale_fill_viridis_c(option = "B") +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(title = "CWD Warm-Dry ('Best-Case'/Lowest)", x = "", y = "", fill = "CWD (mm)") +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 
 cwd_hot_dry_plot <- ggplot() +
-    ggnewscale::new_scale_fill() +
-    geom_spatraster(data = burroughs_cwd_hot_dry) +
-    scale_fill_viridis_c(option = "B") +
-    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
-    labs(title = "CWD Hot-Dry ('Worst-Case'/Highest)", x = "", y = "", fill = "CWD (mm)") +
-    annotation_north_arrow(aes(location = "tr")) +
-    annotation_scale(aes(location = "br"))
+  ggnewscale::new_scale_fill() +
+  geom_spatraster(data = burroughs_cwd_hot_dry) +
+  scale_fill_viridis_c(option = "B") +
+  geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(title = "CWD Hot-Dry ('Worst-Case'/Highest)", x = "", y = "", fill = "CWD (mm)") +
+  annotation_north_arrow(aes(location = "tr")) +
+  annotation_scale(aes(location = "br"))
 
 ggarrange(aet_hot_wet_plot, aet_warm_dry_plot)
 ggarrange(cwd_warm_dry_plot, cwd_hot_dry_plot)
@@ -380,11 +405,11 @@ aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_warm_dry))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_hot_dry))
 names(aet_df) = c("AET_1988", "AET_2022", "AET_warm_wet", "AET_hot_wet", "AET_warm_dry", "AET_hot_dry")
 aet_df <- aet_df %>%
-    pivot_longer(cols = 1:6)
+  pivot_longer(cols = 1:6)
 
 ggplot(aet_df) +
-    geom_boxplot(aes(name, value)) +
-    labs(title = "Burroughs Creek AET", x = "Scenario", y = "Annual AET (mm)")
+  geom_boxplot(aes(name, value)) +
+  labs(title = "Burroughs Creek AET", x = "Scenario", y = "Annual AET (mm)")
 
 cwd_df <- as.data.frame(burroughs_cwd_1988)
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_2022))
@@ -394,11 +419,11 @@ cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_warm_dry))
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_hot_dry))
 names(cwd_df) = c("CWD_1988", "CWD_2022", "CWD_warm_wet", "CWD_hot_wet", "CWD_warm_dry", "CWD_hot_dry")
 cwd_df <- cwd_df %>%
-    pivot_longer(cols = 1:6)
+  pivot_longer(cols = 1:6)
 
 ggplot(cwd_df) +
-    geom_boxplot(aes(name, value)) +
-    labs(title = "Burroughs Creek CWD", x = "Scenario", y = "Annual CWD (mm)")
+  geom_boxplot(aes(name, value)) +
+  labs(title = "Burroughs Creek CWD", x = "Scenario", y = "Annual CWD (mm)")
 
 ```
 
