@@ -136,7 +136,7 @@ wbp_points %>%
 # Burroughs
 
 ## Topographic & Soil Features
-```{r burroughs-poly, fig.cap = "Burroughs Direct Seeding Polygon with Hillshade from 1m LiDAR DEM"}
+```{r burroughs-poly, fig.cap = "Burroughs Direct Seeding Polygon with Hillshade from 1m LiDAR DEM", fig.height = 5,  fig.width = 6}
 burroughs_poly <- st_read("~/OneDrive/burroughs_wb/data/units/Possible_WBP_Units_Nancy_Updated.shp")
 burroughs_elev <- rast("../data/input/burroughs/dem/dem_nad83.tif")
 burroughs_slope <- rast("../data/input/burroughs/dem/slope_nad83.tif")
@@ -155,7 +155,8 @@ ggplot() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  labs(title = "Burroughs with Hillshade") +
+  #labs(title = "Burroughs with Hillshade") +
+  labs(x = "", y = "") +
   annotation_north_arrow(aes(location = "tr")) +
   annotation_scale(aes(location = "br"))
 ```
@@ -176,22 +177,23 @@ knitr::kable(
   caption = "Topographic Statistics of Burroughs Polygon")
 ```
 
-```{r burroughs-soil, fig.cap = "Burroughs Soil Water Holding Capacity (WHC, mm) at 25 cm soil depth."}
+```{r burroughs-soil, fig.cap = "Burroughs Soil Water Holding Capacity (WHC, mm) at 25 cm soil depth.", fig.height = 5, fig.width = 6}
 burroughs_soil <- rast("../data/input/burroughs/soil/soil_whc_025.tif")
 
 ggplot() +
   geom_spatraster(data = burroughs_soil) +
-  labs(title = "Burroughs Soil WHC (mm) to 25cm soil depth", fill = "WHC (mm)") +
+  #labs(title = "Burroughs Soil WHC (mm) to 25cm soil depth", fill = "WHC (mm)") +
+  labs(fill = "WHC (mm)", x = "", y = "") +
   scale_fill_viridis_b() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  annotation_north_arrow(aes(location = "tr")) +
+  annotation_north_arrow(aes(location = "tl")) +
   annotation_scale(aes(location = "br"))
 ```
 
 
-```{r heat-load}
+```{r heat-load, fig.height = 5, fig.width = 6}
 library(reticulate)
 
 use_condaenv(condaenv = "nps-wb", conda = "auto", required = NULL)
@@ -209,12 +211,13 @@ hl_rast <- rast(hl,
 
 ggplot() +
   geom_spatraster(data = hl_rast) +
-  labs(title = "Burroughs Heatload") +
+  #labs(title = "Burroughs Heatload") +
   scale_fill_viridis_c(option = "F") +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
   annotation_north_arrow(aes(location = "tr")) +
+  labs(fill = "Heat load", x = "", y = "") +
   annotation_scale(aes(location = "br"))
 ```
 
@@ -229,6 +232,9 @@ burroughs_historical_cwd <- load_historical(list.files(burroughs_dir, pattern = 
 burroughs_aet_1988 <- burroughs_historical_aet %>% subset(year(time(.)) == 1988) %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
 burroughs_cwd_1988 <- burroughs_historical_cwd %>% subset(year(time(.)) == 1988) %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
 
+burroughs_aet_2013 <- burroughs_historical_aet %>% subset(year(time(.)) == 2013) %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+burroughs_cwd_2013 <- burroughs_historical_cwd %>% subset(year(time(.)) == 2013) %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
+
 burroughs_aet_2022 <- burroughs_historical_aet %>% subset(year(time(.)) >= 2002 & year(time(.)) <= 2022) %>% mean() %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
 burroughs_cwd_2022 <- burroughs_historical_cwd %>% subset(year(time(.)) >= 2002 & year(time(.)) <= 2022) %>% mean() %>% mask(soil_mask, inverse = TRUE) %>% mask(slope_mask, inverse = TRUE)
 ```
@@ -239,7 +245,7 @@ Historical climate data are average across the years 2002-2022.  This
 represents historical "baseline" conditions against with other
 climatic summaries can be compared.
 
-```{r, burroughs-baseline, fig.cap = "Burroughs Historical Water Balance (2002-2022)"}
+```{r, burroughs-baseline, fig.cap = "Burroughs Historical Water Balance (2002-2022)", fig.height = 5, fig.width = 6}
 
 ggplot() +
   geom_spatraster(data = clamp(burroughs_aet_2022, upper = 250, values = FALSE)) +
@@ -247,7 +253,8 @@ ggplot() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  labs(title = "Burroughs 2002-2022 Average Annual AET", x = "", y = "", fill = "AET (mm)") +
+  #labs(title = "Burroughs 2002-2022 Average Annual AET", x = "", y = "", fill = "AET (mm)") +
+  labs(x = "", y = "", fill = "AET (mm)") +
   annotation_north_arrow(aes(location = "tr")) +
   annotation_scale(aes(location = "br"))
 
@@ -257,7 +264,8 @@ ggplot() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  labs(title = "Burroughs 2002-2022 Average Annual CWD", x = "", y = "", fill = "CWD (mm)") +
+  #labs(title = "Burroughs 2002-2022 Average Annual CWD", x = "", y = "", fill = "CWD (mm)") +
+  labs(x = "", y = "", fill = "CWD (mm)") +
   annotation_north_arrow(aes(location = "tr")) +
   annotation_scale(aes(location = "br"))
 
@@ -270,7 +278,7 @@ This year was characterized by extreme drought levels leading to
 widespread wildfires across the GYE.  This serves as an example of an
 extreme year against which other climatic summaries can be compared.
 
-``` {r, burroughs-drought-year, fig.cap="Burroughs Drought Year (1988) annual AET and CWD"}
+``` {r, burroughs-drought-year, fig.cap="Burroughs Drought Year (1988) annual AET and CWD", fig.height = 5, fig.width = 6}
 
 ggplot() +
   geom_spatraster(data = clamp(burroughs_aet_1988, upper = 200, values = FALSE)) +
@@ -278,7 +286,8 @@ ggplot() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  labs(title = "Burroughs 1988 Annual AET (Drought Year)", x = "", y = "", fill = "AET (mm)") +
+  #labs(title = "Burroughs 1988 Annual AET (Drought Year)", x = "", y = "", fill = "AET (mm)") +
+  labs(x = "", y = "", fill = "AET (mm)") +
   annotation_north_arrow(aes(location = "tr")) +
   annotation_scale(aes(location = "br"))
 
@@ -288,7 +297,8 @@ ggplot() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  labs(title = "Burroughs 1988 Annual CWD (Drought Year)", x = "", y = "", fill = "CWD (mm)") +
+  #labs(title = "Burroughs 1988 Annual CWD (Drought Year)", x = "", y = "", fill = "CWD (mm)") +
+  labs(x = "", y = "", fill = "CWD (mm)") +
   annotation_north_arrow(aes(location = "tr")) +
   annotation_scale(aes(location = "br"))
 ```
@@ -318,7 +328,7 @@ producing cones.
 
 
 
-```{r, burroughs-projections, fig.height = 8, fig.width = 16, fig.cap = "Projected Water Balance"}
+```{r, burroughs-projections, fig.height = 5, fig.width = 12, fig.cap = "Projected Water Balance"}
 ## best_case_aet: hot_wet
 ## worse_case_aet: warm_dry
 ## best_case_cwd: warm_dry
@@ -351,7 +361,8 @@ aet_hot_wet_plot <- ggplot() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  labs(title = "AET Hot-Wet ('Best-Case'/Highest)", x = "", y = "", fill = "AET (mm)") +
+  labs(x = "", y = "", fill = "AET (mm)") +
+  #labs(title = "AET Hot-Wet ('Best-Case'/Highest)", x = "", y = "", fill = "AET (mm)") +
   annotation_north_arrow(aes(location = "tr")) +
   annotation_scale(aes(location = "br"))
 
@@ -362,7 +373,8 @@ aet_warm_dry_plot <- ggplot() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  labs(title = "AET Warm-Dry ('Worst-Case'/Lowest)", x = "", y = "", fill = "AET (mm)") +
+  #labs(title = "AET Warm-Dry ('Worst-Case'/Lowest)", x = "", y = "", fill = "AET (mm)") +
+  labs(x = "", y = "", fill = "AET (mm)") +
   annotation_north_arrow(aes(location = "tr")) +
   annotation_scale(aes(location = "br"))
 
@@ -373,7 +385,8 @@ cwd_warm_dry_plot <- ggplot() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  labs(title = "CWD Warm-Dry ('Best-Case'/Lowest)", x = "", y = "", fill = "CWD (mm)") +
+  #labs(title = "CWD Warm-Dry ('Best-Case'/Lowest)", x = "", y = "", fill = "CWD (mm)") +
+  labs(x = "", y = "", fill = "CWD (mm)") +
   annotation_north_arrow(aes(location = "tr")) +
   annotation_scale(aes(location = "br"))
 
@@ -384,7 +397,8 @@ cwd_hot_dry_plot <- ggplot() +
   geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
   geom_sf(data = units, fill = NA, lwd = 1.5) +
   geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
-  labs(title = "CWD Hot-Dry ('Worst-Case'/Highest)", x = "", y = "", fill = "CWD (mm)") +
+  labs(x = "", y = "", fill = "CWD (mm)") +
+  #labs(title = "CWD Hot-Dry ('Worst-Case'/Highest)", x = "", y = "", fill = "CWD (mm)") +
   annotation_north_arrow(aes(location = "tr")) +
   annotation_scale(aes(location = "br"))
 
@@ -393,37 +407,61 @@ ggarrange(cwd_warm_dry_plot, cwd_hot_dry_plot)
 
 ```
 
+``` {r, projections-aet-hot-wet, fig.height = 5, fig.width = 6}
+aet_hot_wet_plot
+
+```
+
+``` {r, projections-aet-warm-dry, fig.height = 5, fig.width = 6}
+aet_warm_dry_plot
+
+```
+
+``` {r, projections-cwd-warm-dry, fig.height = 5, fig.width = 6}
+cwd_warm_dry_plot
+
+```
+
+``` {r, projections-cwd-hot-dry, fig.height = 5, fig.width = 6}
+cwd_hot_dry_plot
+
+```
+
 
 ## Climate Summary
 
-```{r, burroughs-climate-summary, fig.height = 6, fig.width = 8, fig.cap = "Burroughs Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"}
+```{r, burroughs-climate-summary, fig.height = 6, fig.width = 7, fig.cap = "Burroughs Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"}
 aet_df <- as.data.frame(burroughs_aet_1988)
+aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_2013))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_2022))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_warm_wet))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_hot_wet))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_warm_dry))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_hot_dry))
-names(aet_df) = c("AET_1988", "AET_2022", "AET_warm_wet", "AET_hot_wet", "AET_warm_dry", "AET_hot_dry")
+names(aet_df) = c("AET_1988", "AET_2013", "AET_2022", "AET_warm_wet", "AET_hot_wet", "AET_warm_dry", "AET_hot_dry")
 aet_df <- aet_df %>%
   pivot_longer(cols = 1:6)
 
 ggplot(aet_df) +
   geom_boxplot(aes(name, value)) +
-  labs(title = "Burroughs Creek AET", x = "Scenario", y = "Annual AET (mm)")
+  #labs(title = "Burroughs Creek AET", x = "Scenario", y = "Annual AET (mm)")
+  labs(x = "Scenario", y = "Annual AET (mm)")
 
 cwd_df <- as.data.frame(burroughs_cwd_1988)
+cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_2013))
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_2022))
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_warm_wet))
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_hot_wet))
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_warm_dry))
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_hot_dry))
-names(cwd_df) = c("CWD_1988", "CWD_2022", "CWD_warm_wet", "CWD_hot_wet", "CWD_warm_dry", "CWD_hot_dry")
+names(cwd_df) = c("CWD_1988", "CWD_2013", "CWD_2022", "CWD_warm_wet", "CWD_hot_wet", "CWD_warm_dry", "CWD_hot_dry")
 cwd_df <- cwd_df %>%
   pivot_longer(cols = 1:6)
 
 ggplot(cwd_df) +
   geom_boxplot(aes(name, value)) +
-  labs(title = "Burroughs Creek CWD", x = "Scenario", y = "Annual CWD (mm)")
+  #labs(title = "Burroughs Creek CWD", x = "Scenario", y = "Annual CWD (mm)")
+  labs(x = "Scenario", y = "Annual CWD (mm)")
 
 ```
 
