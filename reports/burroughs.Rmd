@@ -430,10 +430,28 @@ cwd_hot_dry_plot
 
 ```
 
+```{r, projection-historical-comparison, fig.width = 11}
+historical_projection_stack <- c(burroughs_cwd_2022, burroughs_cwd_hot_dry)
+names(historical_projection_stack) <- c("2000-2022", "Hot/Dry")
+
+ggplot() +
+  geom_spatraster(data = historical_projection_stack) +
+  scale_fill_viridis_c(option = "B") +
+    geom_sf(data = burroughs_poly, fill = NA, lwd = 1.5) +
+  geom_sf(data = units, fill = NA, lwd = 1.5) +
+  geom_sf_label(data = units, aes(label = Unit), alpha = 0.4) +
+  labs(x = "", y = "", fill = "CWD (mm)") +
+  annotation_north_arrow(aes(location = "tr"), height = unit(0.75, "cm"), width = unit(0.75, "cm")) +
+  annotation_scale(aes(location = "br")) +
+  facet_wrap(~lyr) +
+  theme(panel.spacing.x = unit(8, "mm"))
+#ggsave("~/map.png", height = 4, width = 11)
+```
+
 
 ## Climate Summary
 
-```{r, burroughs-climate-summary, fig.width = map_width, fig.cap = "Burroughs Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"}
+```{r, burroughs-climate-summary, fig.width = 5, fig.cap = "Burroughs Climate summaries.  AET and CWD distributions for all 1m pixels in the avalanche polygon are shown for 1988 (Drought Year), 2002-2022 (Historical Baseline), and 2075-2099 projections for 'Warm/Wet', 'Warm/Dry', 'Hot/Wet', 'Hot/Dry' scenarios"}
 aet_df <- as.data.frame(burroughs_aet_1988)
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_2013))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_2022))
@@ -441,14 +459,18 @@ aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_warm_wet))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_hot_wet))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_warm_dry))
 aet_df <- cbind(aet_df, as.data.frame(burroughs_aet_hot_dry))
-names(aet_df) = c("AET_1988", "AET_2013", "AET_2022", "AET_warm_wet", "AET_hot_wet", "AET_warm_dry", "AET_hot_dry")
+names(aet_df) = c("1988", "2013", "2000-2022", "Warm/Wet", "Hot/Wet", "Warm/Dry", "Hot/Dry")
 aet_df <- aet_df %>%
-  pivot_longer(cols = 1:6)
+  pivot_longer(cols = 1:7)
+
+aet_df$scenario <- if_else(aet_df$name %in% c("1988", "2013", "2000-2022"), "Historical", "Projections")
 
 ggplot(aet_df) +
   geom_boxplot(aes(name, value)) +
   #labs(title = "Burroughs Creek AET", x = "Scenario", y = "Annual AET (mm)")
-  labs(x = "Scenario", y = "Annual AET (mm)")
+  labs(x = "Scenario", y = "Annual AET (mm)") +
+  facet_wrap(~ scenario, scales = "free_x") +
+  theme(axis.text.x = element_text(angle = 45, size = 12, vjust = 1, hjust = 1))
 
 cwd_df <- as.data.frame(burroughs_cwd_1988)
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_2013))
@@ -457,14 +479,19 @@ cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_warm_wet))
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_hot_wet))
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_warm_dry))
 cwd_df <- cbind(cwd_df, as.data.frame(burroughs_cwd_hot_dry))
-names(cwd_df) = c("CWD_1988", "CWD_2013", "CWD_2022", "CWD_warm_wet", "CWD_hot_wet", "CWD_warm_dry", "CWD_hot_dry")
+names(cwd_df) = c("1988", "2013", "2000-2022", "Warm/Wet", "Hot/Wet", "Warm/Dry", "Hot/Dry")
 cwd_df <- cwd_df %>%
-  pivot_longer(cols = 1:6)
+  pivot_longer(cols = 1:7)
+
+cwd_df$scenario <- if_else(cwd_df$name %in% c("1988", "2013", "2000-2022"), "Historical", "Projections")
 
 ggplot(cwd_df) +
   geom_boxplot(aes(name, value)) +
   #labs(title = "Burroughs Creek CWD", x = "Scenario", y = "Annual CWD (mm)")
-  labs(x = "Scenario", y = "Annual CWD (mm)")
+  labs(x = "Scenario", y = "Annual CWD (mm)") +
+  facet_wrap(~ scenario, scales = "free_x") +
+  theme(axis.text.x = element_text(angle = 45, size = 12, vjust = 1, hjust = 1)) 
+#ggsave(filename="~/CWD.png", width = 5, height = 5)
 
 ```
 
