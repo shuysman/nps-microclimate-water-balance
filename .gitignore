@@ -3,3 +3,5 @@
 *.npz
 *.png
 *.zip
+*qgis/
+*data/
