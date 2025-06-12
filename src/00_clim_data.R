@@ -21,7 +21,7 @@ gridmet_vars <- c("tmmn", "tmmx", "pr")
 gridmet_data <- getGridMET(point,
                            varname = gridmet_vars,
                            startDate = ymd("1979-01-01"),
-                           endDate = ymd("2023-12-31"),
+                           endDate = ymd("2024-12-31"),
                            verbose = TRUE)
 
 
