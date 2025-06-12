@@ -34,5 +34,5 @@ calc_annual_sum () {
 
 export -f calc_annual_sum
 
-parallel -j 16 calc_annual_sum {} ::: $hist_models ::: $hist_scenarios ::: $vars ::: avalanche burroughs static_west static_east surprise holly_lake_small
-parallel -j 64 calc_annual_sum {} ::: $proj_models ::: $proj_scenarios ::: $vars ::: avalanche burroughs static_west static_east surprise holly_lake_small
+parallel -j 16 calc_annual_sum {} ::: $hist_models ::: $hist_scenarios ::: $vars ::: avalanche_peak cub_creek chittenden
+parallel -j 64 calc_annual_sum {} ::: $proj_models ::: $proj_scenarios ::: $vars ::: avalanche_peak cub_creek chittenden
