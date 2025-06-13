@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euxo pipefail
 
+sites=$(awk -F, 'NR > 1 { print $1 }' sites.csv)
+
 vars="AET Deficit"
 
 #models="bcc-csm1-1-m bcc-csm1-1 BNU-ESM CanESM2 CNRM-CM5 CSIRO-Mk3-6-0 GFDL-ESM2G GFDL-ESM2M HadGEM2-CC365 HadGEM2-ES365 inmcm4 IPSL-CM5A-LR IPSL-CM5A-MR IPSL-CM5B-LR MIROC5 MIROC-ESM-CHEM MIROC-ESM MRI-CGCM3 NorESM1-M"
@@ -34,5 +36,5 @@ calc_annual_sum () {
 
 export -f calc_annual_sum
 
-parallel -j 16 calc_annual_sum {} ::: $hist_models ::: $hist_scenarios ::: $vars ::: avalanche_peak cub_creek chittenden
-parallel -j 64 calc_annual_sum {} ::: $proj_models ::: $proj_scenarios ::: $vars ::: avalanche_peak cub_creek chittenden
+parallel -j 16 calc_annual_sum {} ::: $hist_models ::: $hist_scenarios ::: $vars ::: $sites
+parallel -j 64 calc_annual_sum {} ::: $proj_models ::: $proj_scenarios ::: $vars ::: $sites

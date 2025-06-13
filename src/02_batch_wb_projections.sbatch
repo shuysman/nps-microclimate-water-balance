@@ -28,7 +28,8 @@ hostname -s
 module load Mamba
 source $HOME/.bashrc
 mamba activate nps-wb
-parallel -j36 python 02_start_wb_v_1_5.py {} :::  CanESM2 HadGEM2-CC365 MRI-CGCM3 ::: rcp45 rcp85 ::: avalanche_peak cub_creek chittenden
+sites=$(awk -F, 'NR > 1 { print $1 }' sites.csv)
+parallel -j36 python 02_start_wb_v_1_5.py {} :::  CanESM2 HadGEM2-CC365 MRI-CGCM3 ::: rcp45 rcp85 ::: $sites
 mamba deactivate
 mamba activate cdo
 ./03_annual_sum.sh

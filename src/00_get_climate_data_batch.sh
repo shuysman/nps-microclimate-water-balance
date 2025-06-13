@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-sites="avalanche_peak cub_creek chittenden"
+sites=$(awk -F, 'NR > 1 { print $1 }' sites.csv)
 
 for site in $sites; do
     Rscript 00_clim_data.R $site
