@@ -1,0 +1,239 @@
+#+options: html-link-use-abs-url:nil html-postamble:auto
+#+options: html-preamble:t html-scripts:nil html-style:t
+#+options: html5-fancy:nil tex:t
+#+html_doctype: xhtml-strict
+#+html_container: div
+#+html_content_class: content
+#+description:
+#+keywords:
+#+html_link_home:
+#+html_link_up:
+#+html_mathjax:
+#+html_equation_reference_format: \eqref{%s}
+#+html_head:
+#+html_head_extra:
+#+subtitle:
+#+infojs_opt:
+#+creator: <a href="https://www.gnu.org/software/emacs/">Emacs</a> 30.1 (<a href="https://orgmode.org">Org</a> mode 9.7.11)
+#+latex_header:
+
+* Yellowstone National Park whitebark pine planting water balance 2025
+
+
+** Setup
+#+begin_src R :session
+  library(terra)
+  library(tidyverse)
+  library(tidyterra)
+  library(lubridate)
+  library(glue)
+  library(sf)
+  library(gghighlight)
+
+  terraOptions(progress = 0)
+
+  drought_year <- 1988
+  hist_years <- 2004:2024
+  end_years <- 2075:2099
+
+  scenarios <- tribble(
+    ~gcm, ~scenario, ~label,
+    "gridmet", "historical", "historical",
+    "gridmet", "historical", "drought-year",
+    "MRI-CGCM3", "rcp85", "warm-wet",
+    "MRI-CGCM3", "rcp45", "warm-dry",
+    "HadGEM2-CC365", "rcp85", "hot-dry",
+    "CanESM2", "rcp85", "hot-wet"
+  )
+
+  sites <- read_csv("src/sites.csv")
+  sites_list <- sites$site
+
+  input_dir <- "./data/input/"
+  data_dir <- "/media/smithers/shuysman/data/nps_wb_2025/"
+
+  load_historical_mean <- function(filename) {
+                                          # Load and calculate historical AET/CWD mean
+    r <- rast(filename)
+
+    r <- r %>%
+      subset(year(time(.)) %in% hist_years) %>% ## Limit to end-century conditions
+      mean() %>%
+      clamp(lower = 0, values = FALSE) / 10 ## remove NAs and divide by
+    ## ten (nps gridded wb is
+    ## provided in units x 10)
+    return(r)
+  }
+
+
+  load_gcm_mean <- function(filename) {
+                                          # Load in one GCM/RCP projection and calculate end-of-century
+                                          # (end_years) average annual AET/CWD
+    r <- rast(filename)
+
+                                          # Fix dates in r. CDO doesn't save them right in the annual_sums
+                                          # script, or I'm not using CDO correctly. Either way, set a date for
+                                          # each layer in the middle of the year for the years covered by the
+                                          # projections, 2006–2099. The actual date ~shouldn't~ matter...
+    time(r) <- seq(ymd("2006-07-02"), ymd("2099-07-02"), by = "1 year")
+    
+    r <- r %>%
+      subset(year(time(.)) %in% end_years) %>% ## Limit to end-century conditions
+      mean() %>%
+      clamp(lower = 0, values = FALSE) / 10 ## remove NAs and divide by
+    ## ten (nps gridded wb is
+    ## provided in units x 10)
+    return(r)
+  }
+
+
+  aet_sprc <- sprc()
+  cwd_sprc <- sprc()
+
+  for (s in sites_list) {
+    message("Starting: ", s)
+
+    aet_data <- rast()
+    cwd_data <- rast()  
+
+    for (i in 1:length(scenarios$scenario)) {
+      scenario <- scenarios$scenario[i]
+      gcm <- scenarios$gcm[i]
+      label <- scenarios$label[i]
+
+      message("Processing: ", scenario, ", ", gcm, ", ", label)
+      
+      if (scenario == "historical") {
+        ### Historical scenarios, separate branches for historical norms and drought-year
+        aet_file <- file.path(data_dir, s, "sums", "historical_gridmet_AET_annual_sum.nc")
+        cwd_file <- file.path(data_dir, s, "sums", "historical_gridmet_Deficit_annual_sum.nc")
+
+        if (label == "historical") {
+          r_aet <- load_historical_mean(aet_file)
+          r_cwd <- load_historical_mean(cwd_file)
+        } else if (label == "drought-year") {
+          r_aet <- rast(aet_file)
+          r_cwd <- rast(cwd_file)
+
+          r_aet <- subset(r_aet, year(time(r_aet)) == drought_year) / 10
+          r_cwd <- subset(r_cwd, year(time(r_cwd)) == drought_year) / 10
+        }     
+      } else {
+        ### Projections
+        aet_file <- file.path(data_dir, s, "sums", glue("{gcm}_{scenario}_AET_annual_sum.nc"))
+        cwd_file <- file.path(data_dir, s, "sums", glue("{gcm}_{scenario}_Deficit_annual_sum.nc"))
+
+        r_aet <- load_gcm_mean(aet_file)
+        r_cwd <- load_gcm_mean(cwd_file)
+      }
+
+      names(r_aet) <- glue("{label}_AET")
+      names(r_cwd) <- glue("{label}_CWD")
+
+      add(aet_data) <- r_aet
+      add(cwd_data) <- r_cwd
+    }
+
+    add(aet_sprc) <- aet_data
+    add(cwd_sprc) <- cwd_data
+  }
+
+  ### Make sure this matches the order in sites_list
+  site_polys <- c(
+    terra::vect("data/input/avalanche_peak/shapefile/Avalanche_Peak_Seeds_Shapefile/Potential_Planting_Locations.shp"),
+    terra::vect("data/input/cub_creek/shapefile/Cub_Creek_Seedlings_Shapefile/Potential_Planting_Locations.shp"),
+    terra::vect("data/input/chittenden/shapefile/Chittenden_Seedling_Shapefile/Potential_Planting_Locations.shp")
+  )
+  names(site_polys) <- c(
+    "avalanche_peak",
+    "cub_creek",
+    "chittenden"
+  )
+
+  site_polys <- project(site_polys, crs(aet_sprc[1]))
+#+end_src
+
+** Planting site macroclimate
+#+begin_src R :session
+  aet_summary_dir <- file.path("/media/smithers/shuysman/data/nps_gridded_wb/summary_layers/AET/")
+  cwd_summary_dir <- file.path("/media/smithers/shuysman/data/nps_gridded_wb/summary_layers/Deficit/")
+
+  aet <- rast(file.path(aet_summary_dir, "historical/V_1_5_annual_gridmet_historical_AET_2000_2019_annual_means_cropped_units_mm.tif"))
+  names(aet) <- "AET"
+  cwd <- rast(file.path(cwd_summary_dir, "historical/V_1_5_annual_gridmet_historical_Deficit_2000_2019_annual_means_cropped_units_mm.tif"))
+  names(cwd) <- "CWD"
+  aet_45 <- rast(file.path(aet_summary_dir, "rcp45/ensembles/ensemble_2070_2099_annual_rcp45_AET_units_mm.tif"))
+  names(aet_45) <- "AET_45"
+  cwd_45 <- rast(file.path(cwd_summary_dir, "rcp45/ensembles/ensemble_2070_2099_annual_rcp45_Deficit_units_mm.tif"))
+  names(cwd_45) <- "CWD_45"
+  aet_85 <- rast(file.path(aet_summary_dir, "rcp85/ensembles/ensemble_2070_2099_annual_rcp85_AET_units_mm.tif"))
+  names(aet_85) <- "AET_85"
+  cwd_85 <- rast(file.path(cwd_summary_dir, "rcp85/ensembles/ensemble_2070_2099_annual_rcp85_Deficit_units_mm.tif"))
+  names(cwd_85) <- "CWD_85"
+
+  wbp_points <- read_csv("/home/steve/OneDrive/whitebark/blister-rust/data/SITE_LOCATIONS.csv") %>%
+    bind_rows(tibble(network = "YELL", park = "YELL", long = sites$lon, lat = sites$lat, site = sites$site)) %>%
+    drop_na(c("lat", "long")) %>%
+    st_as_sf(coords = c("long", "lat"), crs = st_crs("EPSG:4326")) %>%
+    st_transform(crs = st_crs(aet))
+
+  wbp_points <- terra::extract(aet, wbp_points, bind = TRUE)
+  wbp_points <- terra::extract(cwd, wbp_points, bind = TRUE)
+  wbp_points <- terra::extract(aet_45, wbp_points, bind = TRUE)
+  wbp_points <- terra::extract(cwd_45, wbp_points, bind = TRUE)
+  wbp_points <- terra::extract(aet_85, wbp_points, bind = TRUE)
+  wbp_points <- terra::extract(cwd_85, wbp_points, bind = TRUE)
+
+  ggplot(wbp_points) +
+    geom_point(aes(x = CWD, y = AET), color = "darkgrey") +
+    geom_point(data = filter(wbp_points, park == "GYE"), aes(x = CWD, y = AET), color = "royalblue1") +
+      ## geom_point(aes(x = 179.89, 192.98), color = "blue", shape = 3, size = 10) +
+      ## geom_text(aes(x = 179.89, 192.98), color = "blue", label = "historic") +
+      ## geom_point(aes(x = 235.81, 247.61), color = "green", shape = 2, size = 10) +
+      ## geom_text(aes(x = 235.81, 247.61), color = "green", label = "rcp4.5") +
+      ## geom_point(aes(x = 306.32, 287.88), color = "red", shape = 2, size = 10) +
+    ## geom_text(aes(x = 306.32, 287.88), color = "red", label = "rcp8.5") +
+    geom_point(size = 6, data = filter(wbp_points, park == "YELL"), aes(x = CWD, y = AET, shape = site, color = "black")) +
+    geom_point(size = 6, data = filter(wbp_points, park == "YELL"), aes(x = CWD_45, y = AET_45, shape = site, color = "orange")) +
+    geom_point(size = 6, data = filter(wbp_points, park == "YELL"), aes(x = CWD_85, y = AET_85, shape = site, color = "red")) +
+    scale_color_manual(name = "Scenario (color)",
+                      values = c("black"="black",
+                                 "orange"="orange",
+                                 "red"="red"),
+                      labels=c("Historical 2000–2019","RCP45 2070–2099 ","RCP85 2070–2099")) +
+    #geom_text(data = filter(wbp_points, park == "YELL"), aes(x = CWD, y = AET, label = site), nudge_y = -10) +
+    #geom_text(data = filter(wbp_points, park == "YELL"), aes(x = CWD, y = AET), label = "Historical", nudge_y = -10, size = 5) +
+    #geom_text(data = filter(wbp_points, park == "YELL"), aes(x = CWD_45, y = AET_45), label = "4.5", nudge_y = -10, size = 5) +
+    #geom_text(data = filter(wbp_points, park == "YELL"), aes(x = CWD_85, y = AET_85), label = "8.5", nudge_y = -10, size = 5) +
+    labs(x = "Annual CWD (mm)", y = "Annual AET (mm)", shape = "Site (shape)")
+    #labs(title = "WBP Bioclimatic Niche (GYE)")
+#+end_src
+
+** Microclimate comparison
+*** AET
+#+begin_src R :session
+  aet_data <- list()
+
+  for (i in 1:length(sites$site)) {
+    site <- sites$site[i]
+    
+    aet_df <- aet_sprc[i] %>%
+      mask(site_polys[i]) %>%
+      as.data.frame(wide = FALSE)
+
+    aet_df$site <- site
+    
+    aet_data[[i]] <- aet_df
+  }
+
+  aet_data <- bind_rows(aet_data)
+
+
+  ggplot(aet_data) +
+    geom_boxplot(aes(x = layer, y = values)) +
+    facet_wrap(~site, scales = "free")
+#+end_src
+*** CWD
+
+
+** Maps
