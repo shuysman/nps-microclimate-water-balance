@@ -127,8 +127,8 @@
         r_cwd <- load_gcm_mean(cwd_file)
       }
 
-      names(r_aet) <- glue("{label}_AET")
-      names(r_cwd) <- glue("{label}_CWD")
+      names(r_aet) <- glue("{label}")
+      names(r_cwd) <- glue("{label}")
 
       add(aet_data) <- r_aet
       add(cwd_data) <- r_cwd
@@ -154,7 +154,7 @@
 #+end_src
 
 ** Planting site macroclimate
-#+begin_src R :session
+#+begin_src R :session :file macroclimate.png :results output graphics file
   aet_summary_dir <- file.path("/media/smithers/shuysman/data/nps_gridded_wb/summary_layers/AET/")
   cwd_summary_dir <- file.path("/media/smithers/shuysman/data/nps_gridded_wb/summary_layers/Deficit/")
 
@@ -211,7 +211,7 @@
 
 ** Microclimate comparison
 *** AET
-#+begin_src R :session
+#+begin_src R :session :file microclimate-aet.png :results output graphics file
   aet_data <- list()
 
   for (i in 1:length(sites$site)) {
@@ -226,14 +226,114 @@
     aet_data[[i]] <- aet_df
   }
 
-  aet_data <- bind_rows(aet_data)
+  aet_data <- bind_rows(aet_data) %>%
+    mutate(layer = factor(layer, levels = c("historical", "drought-year", "warm-wet", "warm-dry", "hot-dry", "hot-wet"))) %>%
+    mutate(time = if_else(layer == "historical" | layer == "drought-year",
+                          "historical",
+                          "projection"))
 
 
   ggplot(aet_data) +
-    geom_boxplot(aes(x = layer, y = values)) +
-    facet_wrap(~site, scales = "free")
+    geom_boxplot(aes(x = layer, y = values, color = site)) +
+    labs(color = "Site", x = "Scenario", y = "Average annual AET (mm)") +
+    facet_wrap(~time, scales = "free_x")
 #+end_src
 *** CWD
+#+begin_src R :session :file microclimate-cwd.png :results output graphics file
+  cwd_data <- list()
 
+  for (i in 1:length(sites$site)) {
+    site <- sites$site[i]
+    
+    cwd_df <- cwd_sprc[i] %>%
+      mask(site_polys[i]) %>%
+      as.data.frame(wide = FALSE)
+
+    cwd_df$site <- site
+    
+    cwd_data[[i]] <- cwd_df
+  }
+
+  cwd_data <- bind_rows(cwd_data) %>%
+    mutate(layer = factor(layer, levels = c("historical", "drought-year", "warm-wet", "warm-dry", "hot-dry", "hot-wet"))) %>%
+    mutate(time = if_else(layer == "historical" | layer == "drought-year",
+                          "historical",
+                          "projection"))
+
+
+  ggplot(cwd_data) +
+    geom_boxplot(aes(x = layer, y = values, color = site)) +
+    labs(color = "Site", x = "Scenario", y = "Average annual CWD (mm)") +
+    facet_wrap(~time, scales = "free_x")
+#+end_src
 
 ** Maps
+*** AET
+#+begin_src R :session :file map-aet.png :results output graphics file
+  ## Find global max AET for color scaling
+  max_aet <- 0
+  for (i in 1:length(sites$site)) {
+    unit_data <- mask(aet_sprc[i], site_polys[i])
+
+    new_max_aet <- max(minmax(unit_data))
+    if (new_max_aet > max_aet) {
+      max_aet <- new_max_aet
+    }
+  }
+
+  aet_scale <-
+      scale_fill_viridis_c(option = "D", limits = c(0, max_aet))
+
+  plots <- list()
+
+  for (i in 1:length(sites$site)) {
+    site <- sites$site[i]
+
+    unit_data <- mask(aet_sprc[i], site_polys[i])
+    
+    plot <- ggplot() +
+      geom_spatraster(data = unit_data) +
+      aet_scale + 
+      facet_wrap(~lyr, ncol = 2) +
+      labs(title = site, fill = "Annual AET (mm)")
+
+    plots[[i]] <- plot
+  }
+
+  ggarrange(plotlist = plots, ncol = 3, common.legend = TRUE, legend = "bottom")
+#+end_src
+
+*** CWD
+#+begin_src R :session :file map-cwd.png :results output graphics file
+  ## Find global max CWD for color scaling
+  max_cwd <- 0
+  for (i in 1:length(sites$site)) {
+    unit_data <- mask(cwd_sprc[i], site_polys[i])
+
+    new_max_cwd <- max(minmax(unit_data))
+    if (new_max_cwd > max_cwd) {
+      max_cwd <- new_max_cwd
+    }
+  }
+
+  cwd_scale <-
+      scale_fill_viridis_c(option = "B", limits = c(0, max_cwd))
+
+  plots <- list()
+
+  for (i in 1:length(sites$site)) {
+    site <- sites$site[i]
+
+    unit_data <- mask(cwd_sprc[i], site_polys[i])
+    
+    plot <- ggplot() +
+      geom_spatraster(data = unit_data) +
+      cwd_scale + 
+      facet_wrap(~lyr, ncol = 2) +
+      labs(title = site, fill = "Annual CWD (mm)")
+
+    plots[[i]] <- plot
+  }
+
+  ggarrange(plotlist = plots, ncol = 3, common.legend = TRUE, legend = "bottom")
+#+end_src
