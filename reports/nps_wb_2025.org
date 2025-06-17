@@ -2,8 +2,8 @@
 #+options: html-preamble:t html-scripts:nil html-style:t
 #+options: html5-fancy:nil tex:t
 #+options: title:t toc:nil email:t date:t author:t
-#+title: Yellowstone National Park whitebark pine planting 2025
-#+date: <2025-06-16 Mon>
+#+title: Yellowstone National Park whitebark pine planting water balance analysis
+#+date: June 16, 2025
 #+author: Stephen Huysman
 #+email: shuysman@gmail.com
 #+html_doctype: xhtml-strict
@@ -20,36 +20,41 @@
 #+subtitle:
 #+infojs_opt:
 #+BIBLIOGRAPHY:/home/steve/OneDrive/org/library.bib
-#+BABEL: :cache yes
-#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage[margin=.75in]{geometry}
+#+LATEX_HEADER: \renewcommand{\topfraction}{.95}
+#+LATEX_HEADER: \renewcommand{\bottomfraction}{.95}
+#+LATEX_HEADER: \renewcommand{\textfraction}{.05}
+#+LATEX_HEADER: \renewcommand{\floatpagefraction}{.75}
+#+LATEX_HEADER: \setcounter{topnumber}{4}
+#+LATEX_HEADER: \setcounter{bottomnumber}{4}
+#+LATEX_HEADER: \setcounter{totalnumber}{4}
 
 * Executive Summary
 
-Macroclimate-scale projections show the three planting sites selected in Yellowstone National Park potentially transitioning to climates that are unlikely to be favorable for whitebark pine. However, despite end-of-century (2075--2099) projections that reveal the potential for extreme drought stress at all three locations, topoedaphic features that could potentially shelter planted tree seedlings from drought stress are identified as potential microrefugia based on modeled water balance at microclimate scales. Chittenden shows the most extreme projected climate, while larger areas of milder climate are projected to persist in the Avalanche Peak and Cub Creek locations. An algorithm to select planting sites by maximizing projected Actual Evapotranspiration (a measure reflecting growing conditions favorable to plants) and minimizing projected Climatic Water Deficit (a measure of drought stress) across the three planting units selected the largest amount of planting area in Cub Creek, then Avalanche Peak, followed by Chittenden.
+Broad-scale macroclimate (1 km) projections show the three planting sites selected in Yellowstone National Park  (Avalanche Peak, Cub Creek, and Chittenden) potentially transitioning to climates that are unlikely to be favorable for whitebark pine. However, despite end-of-century (2075--2099) projections that reveal the potential for extreme drought stress at all three locations, topoedaphic features that could potentially shelter planted tree seedlings from drought stress are identified as potential microrefugia based on modeled water balance at microclimate scales (1 m). Chittenden shows the most extreme projected drought stress across the planting site, while larger areas of milder climate are projected to persist in the Avalanche Peak and Cub Creek locations. An algorithm to select planting sites by maximizing projected Actual Evapotranspiration (a measure reflecting growing conditions favorable to plants) and minimizing projected Climatic Water Deficit (a measure of drought stress) across the three planting units selected the largest amount of planting area in Cub Creek, then Avalanche Peak, followed by Chittenden. Potential planting locations that seek to minimize drought stress under the most extreme climate projections while maintaining growing conditions favorable for plants include the upper elevations in the eastern section of Avalanche Peak and the northwest facing hillside in Cub Creek. The central depression in Chittenden shows the most favorable modeled water balance in the location; however, Chittenden shows higher drought stress under all projections relative to the other planting locations.
 
 * Introduction
 
 The suitability of planting sites in Yellowstone National Park that
-were selected for direct seeding with whitebark pine (/Pinus albicaulis/
-Engelm.) seeds in 2025 is assessed using a water balance model. First,
-the broad-scale macroclimatic suitability of the sites is assessed
-using a 1 km water balance model
+were selected for planting and seeding of whitebark pine (WBP; /Pinus
+albicaulis/ Engelm.) in 2025 is assessed using a water balance
+model. First, the broad-scale macroclimatic suitability of the sites
+is assessed using a 1 km water balance model
 [cite:@tercekHistoricalChangesPlant2021] by comparing the historical
 and projected water balance of the planting sites to the climate found
 at other locations where whitebark pine is found across the contiguous
 United States (CONUS). Then, a high-resolution 1 m water balance model
-based on USGS LiDAR data [cite:@1MeterDigitalElevation2015] is used to
-assess the suitability of planting sites selected in Yellowstone
-National Park by accounting for the influence of fine-scale
-topoedaphic features (slope, aspect, soil water holding capacity) on
-microclimate. Such fine-scale topoedaphic features have been shown to
-create significant variability in climates revealed by modeled local
-water balance, variability which may be not be apparent when using
-coarser climate or terrain models
+based on USGS LiDAR data is used to assess the suitability of planting
+sites selected in Yellowstone National Park by accounting for the
+influence of fine-scale topoedaphic features (slope, aspect, soil
+water holding capacity) on microclimate. Such fine-scale topoedaphic
+features have been shown to create significant variability in climates
+revealed by modeled local water balance, variability which may not be
+apparent when using coarser climate or terrain models
 [cite:@dyerGISBasedWaterBalance2019]. These microclimates may allow
 for the persistence of climatically sensitive species such as
 whitebark pine, even when regional macroclimates are unfavorable,
-through the creation of climatic microrefugia
+through the creation of climatic microrefugia which are locally favorable climates
 [cite:@dobrowskiClimaticBasisMicrorefugia2011].
 
 Here, the biophysical environment of plants is characterized by Actual
@@ -67,7 +72,7 @@ sites with high AET can promote establishment
 evidence of mortality caused by CWD has been observed in WBP, it is
 likely that high summer CWD could be detrimental to WBP establishment.
 
-#+begin_src R :session :exports none
+#+begin_src R :session :exports none :cache yes :eval never-export
   library(terra)
   library(tidyverse)
   library(tidyterra)
@@ -202,32 +207,34 @@ likely that high summer CWD could be detrimental to WBP establishment.
   site_polys <- project(site_polys, crs(aet_sprc[1]))
 #+end_src
 
-#+RESULTS:
+#+RESULTS[205b1412ec785802be6bdede3ed19a140c744f64]:
 
 * Planting site macroclimate
 
 Planting suitability was evaluated at a macroclimate (1 km) scale to
-compare the location to other regions where WBP grows. Historical
+compare these sites to other regions where WBP grows. Historical
 (2000–2019) and ensemble end-of-century (2070–2099) RCP4.5 and RCP8.5
 averages of annual AET and CWD were retrieved from the NPS 1 km
-Gridded Water Balance Model
-[cite:@tercekRobustProjectionsConsequences2023;
+Gridded Water Balance Model [cite:@tercekRobustProjectionsConsequences2023;
 @tercekHistoricalChangesPlant2021] for WBP monitoring points located
 in the contiguous United States (CONUS) sourced from the white pine
 blister rust monitoring dataset (Huysman /et al./, in prep). WBP
 monitoring data located in Canada were excluded because they are not
 covered by the 1 km NPS Gridded Water Balance Model. The data were
-used to plot the current and projected climate of Burroughs Creek and
-other known locations of whitebark pine in a two-dimensional climate
-space characterized by the relationship between AET and CWD.
+used to plot the current and projected climate of the planting sites
+analyzed in this report and other known locations of whitebark pine in
+a two-dimensional climate space characterized by the relationship
+between AET and CWD.
 
-Projections at the macroclimate scale show all three planting units
-transitioning to the edge or outside historical climate conditions of
-WBP in the GYE. Chittenden shows the most extreme projected climate at
-this scale, with highest AET and CWD out of all three units by
-2070--2099 for both RCP4.5 and RCP8.5 ensemble projections.
+Using CONUS-wide WBP data to define the species' bioclimatic niche,
+macroclimate projections show all three planting units transitioning
+to the edge or outside of the historical climate conditions observed
+for WBP, particularly those within the Greater Yellowstone Ecosystem
+(GYE) (Figure [[fig:macroclimate]]). Chittenden shows the most extreme projected climate at this
+scale, with highest AET and CWD out of all three units by 2070--2099
+for both RCP4.5 and RCP8.5 ensemble projections.
 
-#+begin_src R :session :file img/macroclimate.png :results output graphics file :height 1080 :width 1400 :res 200 :exports results
+#+begin_src R :session :file img/macroclimate.png :results output graphics file :height 1080 :width 1400 :res 200 :exports results  :cache yes :eval never-export
   aet_summary_dir <- file.path("/media/steve/THREDDS/data/nps_gridded_wb/summary_layers/AET/")
   cwd_summary_dir <- file.path("/media/steve/THREDDS/data/nps_gridded_wb/summary_layers/Deficit/")
 
@@ -284,7 +291,7 @@ this scale, with highest AET and CWD out of all three units by
 
 #+CAPTION: Macroclimate space of YELL whitebark pine at 1 km scale. Whitebark pine observations in CONUS from the white pine blister rust monitoring dataset (Huysman /et al./, in prep) were used to create a bioclimatic niche of the species from historical (2000–2019) average annual AET and CWD from the NPS 1 km gridded water balance model [cite:@tercekHistoricalChangesPlant2021]. Historical 2000–2019 average annual AET and CWD for points located in the Greater Yellowstone Ecosystem are highlighted in blue and all other WBP locations in the monitoring dataset across CONUS are grey. The three planting units in Yellowstone National Park analyzed in this report are shown as circles (Avalanche Peak), triangles (Chittenden), and squares (Cub Creek). Historical 2000--2019 water balance for these planting sites are shown in black and projected 2070--2099 water balance for the three planting units are shown in orange (RCP4.5) and red (RCP8.5).
 #+LABEL: fig:macroclimate
-#+RESULTS:
+#+RESULTS[afa331d39bd034a49e999da38a20dabf13a007d4]:
 [[file:img/macroclimate.png]]
 
 * Planting site microclimate
@@ -293,9 +300,9 @@ Figures [[fig:microclimate-aet]] and [[fig:microclimate-cwd]] show the microclim
 
 Four projected climate scenarios (combinations of General Circulation models [GCM] and Representative Concentration Pathways [RCP]) were chosen to bracket extremes of changes in annual temperature and precipitation in Yellowstone National Park [cite:@lawrenceDivergentPlausibleRelevant2021]: /warm-wet/ (MRI-CGCM3/RCP8.5), /warm-dry/ (MRI-CGCM3/RCP4.5), /hot-dry/ (HadGEM2-CC365/RCP8.5), and /hot-wet/ (CanESM2/RCP8.5). All of these projections show increases in average annual AET and CWD compared to the 2004-2024 historical baseline. Three of the four projected scenarios show average annual CWD that are similar or greater in magnitude to the annual CWD experienced during 1988. These projections show that AET is not likely to be limiting at these sites but there is potential for extreme drought stress at all sites. Chittenden shows the highest potential for drought stress, with the highest projected CWD under the /hot-dry/ scenario.
 
-Given this potential for drought stress at all planting units, the scenario with the highest projected CWD, /hot-dry/, will be used to showcase the "worst-case" climate scenario, while /warm-dry/ will represent the "best-case" climate scenario because it shows the lowest increases in projected CWD.
+Given this potential for drought stress at all planting units, the scenario with the highest projected CWD, /hot-dry/, will be used to represent the "worst-case" climate scenario, while /warm-dry/ will represent the "best-case" climate scenario because it shows the lowest increases in projected CWD.
 
-#+begin_src R :session :file img/microclimate-aet.png :results output graphics file :height 900 :width 1200 :res 200 :exports results
+#+begin_src R :session :file img/microclimate-aet.png :results output graphics file :height 900 :width 1200 :res 200 :exports results  :cache yes :eval never-export
   aet_data <- list()
 
   for (i in 1:length(sites$site)) {
@@ -326,10 +333,10 @@ Given this potential for drought stress at all planting units, the scenario with
 
 #+CAPTION: Microclimatic variability in annual AET across historical and projected climate scenarios. Modeled 1 m AET for two historical scenarios is shown: /historical/ 2004-2024 historical average and /drought-year/ 1988 annual AET. The average 2075-2099 average annual AET for four projections bracketing extremes of changes in annual temperature and precipitation are shown: /warm-wet/ (MRI-CGCM3/RCP8.5), /warm-dry/ (MRI-CGCM3/RCP4.5), /hot-dry/ (HadGEM2-CC365/RCP8.5), and /hot-wet/ (CanESM2/RCP8.5).
 #+LABEL: fig:microclimate-aet
-#+RESULTS:
+#+RESULTS[091ddecce598199e98512e0c135a07c5635b1e75]:
 [[file:img/microclimate-aet.png]]
 
-#+begin_src R :session :file img/microclimate-cwd.png :results output graphics file :height 900 :width 1200 :res 200 :exports results
+#+begin_src R :session :file img/microclimate-cwd.png :results output graphics file :height 900 :width 1200 :res 200 :exports results  :cache yes :eval never-export
   cwd_data <- list()
 
   for (i in 1:length(sites$site)) {
@@ -358,15 +365,16 @@ Given this potential for drought stress at all planting units, the scenario with
     facet_wrap(~time, scales = "free_x")
 #+end_src
 
-#+CAPTION: Microclimatic variability in annual Climatic Water Deficit (CWD) across historical and projected climate scenarios. Modeled 1 m CWD for two historical scenarios is shown: /historical/ 2004-2024 historical average and /drought-year/ 1988 annual CWD. The average 2075-2099 average annual CWD for four projections bracketing extremes of changes in annual temperature and precipitation are shown: /warm-wet/ (MRI-CGCM3/RCP8.5), /warm-dry/ (MRI-CGCM3/RCP4.5), /hot-dry/ (HadGEM2-CC365/RCP8.5), and /hot-wet/ (CanESM2/RCP8.5).#+LABEL: fig:microclimate-cwd
-#+RESULTS:
+#+CAPTION: Microclimatic variability in annual Climatic Water Deficit (CWD) across historical and projected climate scenarios. Modeled 1 m CWD for two historical scenarios is shown: /historical/ 2004-2024 historical average and /drought-year/ 1988 annual CWD. The average 2075-2099 average annual CWD for four projections bracketing extremes of changes in annual temperature and precipitation are shown: /warm-wet/ (MRI-CGCM3/RCP8.5), /warm-dry/ (MRI-CGCM3/RCP4.5), /hot-dry/ (HadGEM2-CC365/RCP8.5), and /hot-wet/ (CanESM2/RCP8.5).
+#+LABEL: fig:microclimate-cwd
+#+RESULTS[672f76e12b97b464e509276a71176f745b345ab1]:
 [[file:img/microclimate-cwd.png]]
 
 * Modeled 1 m water balance at planting sites
 
-Modeled 1 m water balance for these planting sites shows significant variability in microclimates created by local terrain features. Figures [[fig:wb-avalanche]], [[fig:wb-cub_creek]], and [[fig:wb-chittenden]] show the modeled 1 m water balance for historical and projected climate scenarios for Avalanche Peak, Cub Creek, and Chittenden, respectively. Spatial patterns of AET and CWD are consistent across time periods, with more northern exposures and higher soil water holding capacities maximizing AET and minimizing CWD and more southern exposures and lower soil water holding capacities minimizing AET and maximizing CWD.
+Modeled 1 m water balance for these planting sites shows significant variability in microclimates created by local terrain features. Figures [[fig:wb-avalanche]], [[fig:wb-cub_creek]], and [[fig:wb-chittenden]] show the modeled 1 m water balance for historical and projected climate scenarios for Avalanche Peak, Cub Creek, and Chittenden, respectively. Spatial patterns of AET and CWD are consistent across time periods: more northern exposures and higher soil water holding capacities maximize AET and minimize CWD and more southern exposures and lower soil water holding capacities minimize AET and maximize CWD.
 
-#+begin_src R :session :exports none
+#+begin_src R :session :exports none  :cache yes :eval never-export
   ## Find global max AET and CWD for color scaling
   max_aet <- 0
   for (i in 1:length(sites$site)) {
@@ -396,9 +404,9 @@ Modeled 1 m water balance for these planting sites shows significant variability
 
 #+end_src
 
-#+RESULTS:
+#+RESULTS[a498f8744220861487e762cbd3ef91069a560d6a]:
 
-#+begin_src R :session :file img/wb-avalanche.png :results output graphics file :height 1200 :width 2000 :res 175 :exports results
+#+begin_src R :session :file img/wb-avalanche.png :results output graphics file :height 1200 :width 2000 :res 175 :exports results  :cache yes :eval never-export
 avalanche_id <- 1
 
 site <- sites$site[avalanche_id]
@@ -426,10 +434,10 @@ ggarrange(avalanche_aet_plot, avalanche_cwd_plot, ncol = 2)
 
 #+CAPTION: Modeled historical and projected average annual AET and CWD for Avalanche Peak. The color ramps used for AET and CWD visualizations are kept the same between planting units and climate scenarios to facilitate direct comparisons between units or time periods. 
 #+LABEL: fig:wb-avalanche
-#+RESULTS:
+#+RESULTS[5116df37516fba97ab503b2c79e0d58ef37ecebf]:
 [[file:img/wb-avalanche.png]]
 
-#+begin_src R :session :file img/wb-cub_creek.png :results output graphics file :height 1200 :width 1900 :res 175 :exports results
+#+begin_src R :session :file img/wb-cub_creek.png :results output graphics file :height 1200 :width 1900 :res 175 :exports  results  :cache yes :eval never-export
 cub_creek_id <- 2
 
 site <- sites$site[cub_creek_id]
@@ -457,10 +465,10 @@ ggarrange(cub_creek_aet_plot, cub_creek_cwd_plot, ncol = 2)
 
 #+CAPTION: Modeled historical and projected average annual AET and CWD for Cub Creek. The color ramps used for AET and CWD visualizations are kept the same between planting units and climate scenarios to facilitate direct comparisons between units or time periods. 
 #+LABEL: fig:wb-cub_creek
-#+RESULTS:
+#+RESULTS[b90931d91c0b0b89d564a21babc0a0eb0b80c715]:
 [[file:img/wb-cub_creek.png]]
 
-#+begin_src R :session :file img/wb-chittenden.png :results output graphics file :height 1800 :width 1600 :res 175 :exports results
+#+begin_src R :session :file img/wb-chittenden.png :results output graphics file :height 1800 :width 1600 :res 175 :exports results  :cache yes :eval never-export
 chittenden_id <- 3
 
 site <- sites$site[chittenden_id]
@@ -488,7 +496,7 @@ ggarrange(chittenden_aet_plot, chittenden_cwd_plot, ncol = 2)
 
 #+CAPTION: Modeled historical and projected average annual AET and CWD for Chittenden. The color ramps used for AET and CWD visualizations are kept the same between planting units and climate scenarios to facilitate direct comparisons between units or time periods. 
 #+LABEL: fig:wb-chittenden
-#+RESULTS:
+#+RESULTS[e9b07bc566edb247f457e275e83560b8982b7f67]:
 [[file:img/wb-chittenden.png]]
 
 * Planting site selection
@@ -497,30 +505,32 @@ Algorithmically selected planting locations that maximize AET and
 minimize CWD in end-of-century (2075--2099) projections are shown for
 the worst-case (hot-dry) (Figure [[fig:planting-map-worst]]) and best-case
 (warm-dry) (Figure [[fig:planting-map-best]]) climate scenarios. The
-worst-case planting sites are conservative recommendations, that
-minimize drought stress under the projection with highest CWD values
-(Figure [[fig:microclimate-cwd]]). For the worst-case scenario, no
+worst-case planting sites are conservative recommendations, that seek
+to minimize drought stress under the projection with highest CWD
+values (Figure [[fig:microclimate-cwd]]). For the worst-case scenario, no
 planting locations are recommended by the algorithm in the Chittenden
-location because of it's high projected CWD. The best-case planting
-sites are less conservative recommendations. Because the projected
-climate in the best-case scenario shows less potential for drought
-stress, minimizing CWD in this climate scenario may be less important;
-however, these locations still should optimize growing conditions for
-plants.
+location because of its high projected CWD. Under the best-case
+climate scenario, minimizing drought stress is less critical because
+the projected drought stress is similar in magnitude to current
+conditions. However, the planting recommendations under the best-case
+scenario still seek to optimize conditions of water availability and
+drought stress.
 
-The planting site selection algorithm works by selecting the 1,000,000
-cells with highest AET and 1,000,000 cells with lowest CWD, then
-taking the union of those locations. Because there are locations with
-high AET that do not have low CWD, and vice-versa, the final area
+The planting site recommendation algorithm works by selecting the
+1,000,000 cells with highest AET and 1,000,000 cells with lowest CWD,
+then taking the union of those locations. Because there are locations
+with high AET that do not have low CWD, and vice-versa, the final area
 identified is smaller than the initial 1,000,000 cells. For the
-worst-case scenario, the final identified area is approximately .18
-km^2 and for the best-case scenario is approximately .1 km^2. This
-algorithm can be tweaked by increasing or decreasing the amount of
-cells to maximize AET/minimize CWD based on planting objectives and
-management risk objectives. For example, if more seed stock is
-available, the search area can be increased to find more suitable
-planting locations, at the cost of less optimal AET and CWD for some
-locations in the final union.
+worst-case scenario, the final identified area is approximately 0.18
+km^2 and for the best-case scenario is approximately 0.1 km^2. The
+area selected in the best-case scenario is smaller because there is
+less overlap between pixels with high AET and low CWD in this
+scenario. This algorithm can be tweaked by increasing or decreasing
+the amount of cells to maximize AET/minimize CWD based on planting
+objectives and management risk objectives. For example, if more seed
+stock is available, the search area can be increased to find more
+suitable planting locations, at the cost of less optimal AET and CWD
+for some locations in the final union.
 
 The planting sites selected by this algorithm are recommendations but
 should not be taken as absolute prescriptions. Planting decisions made
@@ -534,7 +544,7 @@ gridded climate data products. However, several caveats and
 limitations exist with the use of these methods.
 
 Climate data from a single gridMET/MACA grid cell were used to
-represent the entire Burroughs Creek site. These products are designed
+represent each planting site analyzed in this report. These products are designed
 to show broad-scale patterns at regional scales that hold across large
 groups of pixels [cite:@abatzoglouDevelopmentGriddedSurface2013].
 Uncertainty increases when these climate data products are applied to
@@ -544,7 +554,7 @@ relatively small area examined here.
 Temperature and precipitation data are not available at high
 resolutions in this study system and all available gridded climate
 data products have uncertainty in areas of complex topography such as
-mountains regions [cite:@behnkeEvaluationDownscaledGridded2016]. The
+mountainous regions [cite:@behnkeEvaluationDownscaledGridded2016]. The
 model and its climate inputs do not consider some sub-grid cell
 phenomena affecting air temperature such as temperature inversions and
 cold air drainage. Precipitation also varies at sub-grid cell scales
@@ -576,7 +586,7 @@ at the site. Therefore, planting site selection based on current
 conditions alone is unlikely to result in plantings that avoid this
 stress in the future.
 
-#+begin_src R :session :exports none 
+#+begin_src R :session :exports none   :cache yes :eval never-export
   n_cells <- 1000000
 
   hot_dry_cwd_sprc <- sprc()
@@ -622,10 +632,19 @@ stress in the future.
   ## zonal(hot_dry_aet, union_poly, fun = "max")
 #+end_src
 
-#+RESULTS:
-: 1
+#+RESULTS[771cd3450ee1ef76d8dc70ea4294e061208d3b44]:
 
-#+begin_src R :session :file img/worst-case-planting-map.png :results output graphics file :height 1800 :width 1080 :res 200 :exports results
+#+NAME: attr_wrap
+#+BEGIN_SRC sh :var data="" :var height="\\textheight" :results output :exports none :eval never-export
+  echo "#+ATTR_LATEX: :height $height"
+  echo "$data"
+#+END_SRC
+
+#+RESULTS: attr_wrap
+: #+ATTR_LATEX: :height 	extheight
+: 
+
+#+begin_src R :session :file img/worst-case-planting-map.png :results output graphics file :height 1800 :width 1080 :res 200 :exports results  :cache yes :post attr_wrap(height=".85\\textheight", data=*this*) :eval never-export
   avalanche_id <- 1
   cub_creek_id <- 2
   chittenden_id <- 3
@@ -677,59 +696,60 @@ stress in the future.
   ggarrange(avalanche_planting_map, cub_creek_planting_map, chittenden_planting_map, ncol = 1, legend = "none")
 #+end_src
 
-#+CAPTION: Algorithmically selected planting locations (pink) for the /hot-dry/ (worst-case) climate scenario. The final selected area is approximately 0.18 km^2. Note that no locations in Chittenden were idenified in this scenario.
+#+CAPTION: Algorithmically selected planting locations (highlighted in pink) for the /hot-dry/ (worst-case) climate scenario. These are conservative planting location recommendations that seek to provide shelter from the most extreme projected drought conditions while maintaining conditions promoting plant growth. The final selected area is approximately 0.18 km^2. Note that no locations in Chittenden were idenified in this scenario. Tiles © Esri - Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community.
 #+LABEL: fig:planting-map-worst
-#+RESULTS:
+#+RESULTS[32011f4b81bee61307771d3ff7905623bd096602]:
+#+ATTR_LATEX: :height .85\textheight :placement [p]
 [[file:img/worst-case-planting-map.png]]
 
-#+begin_src R :session :exports none
-n_cells <- 1000000
+#+begin_src R :session :exports none  :cache yes :eval never-export
+  n_cells <- 1000000
 
-warm_dry_cwd_sprc <- sprc()
+  warm_dry_cwd_sprc <- sprc()
 
-for (i in 1:length(sites_list)) {
-  r <- cwd_sprc[i] %>% subset(4) %>% mask(site_polys[i])
+  for (i in 1:length(sites_list)) {
+    r <- cwd_sprc[i] %>% subset(4) %>% mask(site_polys[i])
 
-  add(warm_dry_cwd_sprc) <- r
-}
+    add(warm_dry_cwd_sprc) <- r
+  }
 
-warm_dry_cwd <- merge(warm_dry_cwd_sprc)
+  warm_dry_cwd <- merge(warm_dry_cwd_sprc)
 
-lowest_cwd <- selectHighest(warm_dry_cwd, n = n_cells, low = TRUE)
+  lowest_cwd <- selectHighest(warm_dry_cwd, n = n_cells, low = TRUE)
 
-warm_dry_aet_sprc <- sprc()
+  warm_dry_aet_sprc <- sprc()
 
-for (i in 1:length(sites_list)) {
-  r <- aet_sprc[i] %>% subset(4) %>% mask(site_polys[i])
+  for (i in 1:length(sites_list)) {
+    r <- aet_sprc[i] %>% subset(4) %>% mask(site_polys[i])
 
-  add(warm_dry_aet_sprc) <- r
-}
+    add(warm_dry_aet_sprc) <- r
+  }
 
-warm_dry_aet <- merge(warm_dry_aet_sprc)
+  warm_dry_aet <- merge(warm_dry_aet_sprc)
 
-highest_aet <- selectHighest(warm_dry_aet, n = n_cells, low = FALSE)
+  highest_aet <- selectHighest(warm_dry_aet, n = n_cells, low = FALSE)
 
-##plet(lowest_cwd)
+  ##plet(lowest_cwd)
 
 
-union_best <- lowest_cwd & highest_aet
+  union_best <- lowest_cwd & highest_aet
 
-##plet(union)
+  ##plet(union)
 
-## zonal(warm_dry_cwd, union_poly, fun = "mean")
-## zonal(warm_dry_aet, union_poly, fun = "mean")
+  ## zonal(warm_dry_cwd, union_poly, fun = "mean")
+  ## zonal(warm_dry_aet, union_poly, fun = "mean")
 
-## zonal(warm_dry_cwd, union_poly, fun = "min")
-## zonal(warm_dry_aet, union_poly, fun = "min")
+  ## zonal(warm_dry_cwd, union_poly, fun = "min")
+  ## zonal(warm_dry_aet, union_poly, fun = "min")
 
-## zonal(warm_dry_cwd, union_poly, fun = "max")
-## zonal(warm_dry_aet, union_poly, fun = "max")
+  ## zonal(warm_dry_cwd, union_poly, fun = "max")
+  ## zonal(warm_dry_aet, union_poly, fun = "max")
 #+end_src
 
 #+RESULTS:
 : 1
 
-#+begin_src R :session :file img/best-case-planting-map.png :results output graphics file :height 1800 :width 1080 :res 200 :exports results
+#+begin_src R :session :file img/best-case-planting-map.png :results output graphics file :height 1800 :width 1080 :res 200 :exports results  :cache yes :post attr_wrap(height=".85\\textheight", data=*this*) :eval never-export
   avalanche_id <- 1
   cub_creek_id <- 2
   chittenden_id <- 3
@@ -781,10 +801,19 @@ union_best <- lowest_cwd & highest_aet
   ggarrange(avalanche_planting_map, cub_creek_planting_map, chittenden_planting_map, ncol = 1, legend = "none")
 #+end_src
 
-#+CAPTION: Algorithmically selected planting locations (pink) for the /warm-dry/ (best-case) climate scenario. The final selected area is approximately 0.1 km^2.
+#+CAPTION: Algorithmically selected planting locations (highlighted in pink) for the /warm-dry/ (best-case) climate scenario. There is only a slight increase in average CWD (drought stress) projected in this scenario, so avoidance of drought stress is less critical. These recommendations seek to optimize the balance of drought stress and water availability to promote plant growth and survival. The final selected area is approximately 0.1 km^2. Tiles © Esri - Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community.
 #+LABEL: fig:planting-map-best
-#+RESULTS:
+#+RESULTS[8f074a517daa9e6b5c6659a239abf5f12423cbbb]:
+#+ATTR_LATEX: :height .85\textheight :placement [p]
 [[file:img/best-case-planting-map.png]]
 
-* Bibliography 
+\clearpage
+
+* Acknowledgments
+
+Funding for this work was provided by the Northern Rockies Conservation Cooperative.
+
+Computational efforts were performed on the Tempest High Performance Computing System, operated and supported by University Information Technology Research Cyberinfrastructure (RRID:SCR\_026229) at Montana State University.
+
+* References Cited 
 #+PRINT_BIBLIOGRAPHY:
