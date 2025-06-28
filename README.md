@@ -46,7 +46,7 @@ The initial data prep is currently performed in QGIS. ArcGIS or any other GIS wi
    1. Calculate average elevation using 1m DEM
    2. Compare with elevation in `metdata_elevationdata.nc`
 3. Retrieve 1m USGS LiDAR data for AOI bbox
-   - use National Map download service (https://apps.nationalmap.gov/downloader/)
+   - use National Map download service ( https://apps.nationalmap.gov/downloader/ )
    - Upload shapefile to set bounding box for data retrieval. You can use the original NPS/USFS planting area polygon shapefile here instead of bbox.gpkg, because the 1m LiDAR is provided in big chunks and we'll trim it down to the bbox later.
    - Select `Data` > `Elevation Products (3D Elevation Program Products and Services)` > `Subcategories` > `1 meter DEM`
    - File format:  `GeoTIFF, IMG`
@@ -93,9 +93,11 @@ surprise,-110.777570,  43.729726,2872.52
   - If polygons extend past gridMET cell boundaries, set a point here that is within a grid cell that is representative of the site (i.e., similar elevation). The actual point location is not super important as long as it is located within the grid cell you are targetting.
   - metdata_elev comes from `metdata_elevationdata.nc`
   
-11. Run `src/00_clim_data.R`
+11. Run `src/00_clim_data_batch.sh`
   - retrieves gridMET and MACA data for each point in sites.csv
 
 12. Run `src/01_resample_layers.R`
  - Resamples 1980_dayl_na.nc4, merged_jennings2.tif, and soils data using 1m DEM as reference
+
+13. (If running on a SLURM cluster) run `02_batch_wb_historical.sbatch` and `02_batch_wb_projections.sbatch`
 
