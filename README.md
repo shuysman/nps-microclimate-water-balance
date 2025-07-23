@@ -1,11 +1,54 @@
-# 1m Water Balance model for WBP core area analysis
+# NPS gridded water balance model
+
+This repository contains a high-resolution, gridded water balance model developed for ecological applications within the National Park Service. 
+
+The model is designed to downscale coarse climate datasets (GridMET for historical analysis and MACA for future projections) to a 1-meter resolution. It integrates fine-scale topographic data derived from LiDAR and soil water holding capacity from SSURGO to simulate key water balance components—such as Actual Evapotranspiration (AET) and Climatic Water Deficit—at the microsite level.
+
+This detailed, localized output supports critical conservation and management decisions, such as identifying optimal planting locations for climate-sensitive species like Whitebark Pine. The workflow is built for batch processing multiple sites on high-performance computing (HPC) clusters.
+
+![2002-2022 Average Annual Climatic Water Deficit - Surprise and Amphitheater, GRTE](https://github.com/user-attachments/assets/c366ca37-40a1-4cf6-9676-012ead12c62b)
+
+# Requirements
+
+This project relies on a combination of Python, R, and shell scripting and has only been tested on Linux environments (Debian 12/13 and Rocky Linux 8). The provided sbatch files can be used to submit intensive parts of the pipeline to an HPC cluster running Slurm Workload Manager with dependencies managed by Conda/Mamba. The provided spec-file.txt can be used to create a Conda environment with the required dependencies for the python components of pipeline.
+
+Some manual data preparation is required. QGIS is recommended for these steps but any GIS providing basic raster and vector manipulations should also work.
+
+**Software:**
+
+*   **GIS:** [QGIS](https://qgis.org/) for initial data preparation.
+*   **Environment Management:** [Mamba](https://mamba.readthedocs.io/en/latest/installation.html) or [Conda](https://docs.conda.io/en/latest/miniconda.html) for managing software packages and environments.
+*   **Command-Line Utilities:**
+    *   [Climate Data Operators (CDO)](https://code.mpimet.mpg.de/projects/cdo/): For processing NetCDF files.
+    *   [GNU Parallel](https://www.gnu.org/software/parallel/): For executing jobs in parallel.
 
 
-https://github.com/user-attachments/assets/c366ca37-40a1-4cf6-9676-012ead12c62b
+**R Environment:**
 
-2002-2022 Average Annual Climatic Water Deficit - Surprise and Amphitheater, GRTE
+Initial data prep and climate data retrieval steps require R and the following packages:
+*   `climateR`
+*   `glue`
+*   `sf`
+*   `terra`
+*   `tidyverse`
+*   `FedData`
+*   `optparse`
+*   `janitor`
 
-# Site Setup
+**Python Environment (`nps-wb`):**
+
+The water balance model (`02_start_wb_v_1_5.py`) requires Python 3 and the following packages:
+*   `gdal`
+*   `netcdf4`
+*   `numpy`
+*   `pandas`
+*   `rioxarray`
+*   `utm`
+*   `xarray`
+
+
+# Model Run Instructions
+## Site Setup
 Create a directory in data/input with the desired site name, i.e., `/data/input/holly_lake_small`
 Create subdirectories dem and soil
 
@@ -38,7 +81,19 @@ burroughs/
 Example site data available at https://huysman.net/research/core_areas/data.zip
 
 
-# Steps
+## Climate Data
+### Check for gridcell overlap
+**Before running any of the following steps** you need to check if the site polygon is completely within a metdata grid cell, or if it overlaps the edges/corners between cells. This step currently needs to be performed manually using a GIS of your choice (QGIS recommended). Load the site polygon and included `data/metdata_elevationdata.nc` file into your GIS. Visually example the polygon for potential overlap with the `metdata_elevationdata.nc` raster. The following image illustrates two polygons, one overlapping and one not overlapping with the metdata gridcells:
+
+![Overlapping and non-overlapping site polygons](./docs/gridcell-overlap-example.png)
+
+If no overlap, proceed to downloading the climate data. If there is overlap, select a point in the polygon that is within a gridcell that is representative of the site. I recommend selecting the metdata gridcell that most closely matches the elevation of the site (average elevation of all 1 m DEM pixels within the site polygon). If using the `00_clim_data.R` script in interactive mode, you will be prompted with choices to help facilitate this selection (not yet implemented). `00_get_climate_data_batch.sh` can be used to non-interactively batch download climate data for all sites in `sites.csv`.
+
+### Download climate data
+
+
+
+## Steps
 The initial data prep is currently performed in QGIS. ArcGIS or any other GIS with basic geospatial operations should also work fine. You need to manually prepare a bounding box, 1 m DEM layer, 1 m slope layer, 1 m aspect layer, 1 m hillshade layer, and 1 m soil WHC raster following these instructions.
 1. Set up a directory in `input/` for each AOI. Pick a machine-readable name for each site, and use this naming consistently throughout. I.e., "Avalanche Peak" -> `input/avalanche_peak`
 2. Make bbox.gpkg for bounding box from input shapefile for Area of Interest (AOI). This will be the area of 1m pixels to run the water balance model. Note that the outer border of 1 m pixels will be cut off the final water balance calculations, because determination of slope "eats" up those pixels. You can buffer the shapefile before this step if you are concerned about information loss for those pixels, which is likely to be unnoticeable at the final analysis extent.
@@ -50,7 +105,7 @@ The initial data prep is currently performed in QGIS. ArcGIS or any other GIS wi
    - Upload shapefile to set bounding box for data retrieval. You can use the original NPS/USFS planting area polygon shapefile here instead of bbox.gpkg, because the 1m LiDAR is provided in big chunks and we'll trim it down to the bbox later.
    - Select `Data` > `Elevation Products (3D Elevation Program Products and Services)` > `Subcategories` > `1 meter DEM`
    - File format:  `GeoTIFF, IMG`
-   - Click `Search Products`, click the little shopping cart to add one layer to cart or add all to cart and stitch together if AOI overlaps multiple 
+   - Click `Search Products`, click the little shopping cart to add one layer to cart or add all to cart and stitch together if AOI overlaps multiple files.
    - Save the tiff to [unit]/dem/USGS_1m.tif, add to QGIS project
 4. Crop raster using AOI bboxes
    - "Clip raster by extent" tool in QGIS
