@@ -48,7 +48,7 @@ The water balance model (`02_start_wb_v_1_5.py`) requires Python 3 and the follo
 
 
 # Model Run Instructions
-An example is included in `/data/input/test` which can be used to run the model for testing. The following steps can be used to reproduce the test files in order to demonstrate how to set up new sites for the model. The test site demonstrates a site polygon that *does not* overlap a metdata gridcell, an issue described in more detail below.
+An example is included in `/data/input/test` which can be used to run the model for testing. The following steps can be used to reproduce the test files in order to demonstrate how to set up new sites for the model. The test site demonstrates a site polygon that *does not* overlap a metdata gridcell, an issue described in more detail below. This is a modified version of Mike Tercek's [NPS Gridded Water Balance Model](http://www.yellowstoneecology.com/research/Gridded_Water_Balance_Model_Version_2_User_Manual.pdf) designed to run at finer resolutions and with some additional features such as empirically derived lapse rate corrections. The core water balance logic is the same between the two scripts.
 
 ## Site Setup
 Create (or receive) a shapefile (ESRI Shapefile format) for a single area of interest to run the water balance model. Depending on computer memory constraints, the site size should be to below around 100-150 hectares. At around 100 hectares, sites need approximately 10 GB of RAM to run the water balance model. 
