@@ -62,8 +62,8 @@ Retrieve 1 m USGS LiDAR data for the area of interest
 Once the input shapefile and 1 m DEM are saved in the correct locations, run `00_prep_data.R` which automates the rest of the data preparation steps. This script:
 1. Crops the 1 m DEM to the extent of the site polygon input. 
 2. Generates and saves slope, aspect, and hillshade layers from the cropped 1 m DEM.
-3. Resamples and crops Jennings T~50~ coefficients to the resolution and area covered by the cropped 1 m DEM.
-4. Retrieves soil water holding capacity at 25 cm soil depth (`aws025wta`) from the SSURGO database and creates rasterized version compatible with other GIS layers.
+3. Resamples and crops Jennings T<sub>50</sub> coefficients to the resolution and area covered by the cropped 1 m DEM.
+ 4. Retrieves soil water holding capacity at 25 cm soil depth (`aws025wta`) from the SSURGO database and creates rasterized version compatible with other GIS layers.
    
 ## Climate Data
 ### Check for gridcell overlap
@@ -73,47 +73,8 @@ Once the input shapefile and 1 m DEM are saved in the correct locations, run `00
 
 If no overlap, proceed to downloading the climate data. If there is overlap, select a point in the polygon that is within a gridcell that is representative of the site. I recommend selecting the metdata gridcell that most closely matches the elevation of the site (average elevation of all 1 m DEM pixels within the site polygon). If using the `00_clim_data.R` script in interactive mode, you will be prompted with choices to help facilitate this selection (not yet implemented). `00_get_climate_data_batch.sh` can be used to non-interactively batch download climate data for all sites in `sites.csv`.
 
-### Download climate data
-
-
-
-## Steps
-The initial data prep is currently performed in QGIS. ArcGIS or any other GIS with basic geospatial operations should also work fine. You need to manually prepare a bounding box, 1 m DEM layer, 1 m slope layer, 1 m aspect layer, 1 m hillshade layer, and 1 m soil WHC raster following these instructions.
-1. Set up a directory in `input/` for each AOI. Pick a machine-readable name for each site, and use this naming consistently throughout. I.e., "Avalanche Peak" -> `input/avalanche_peak`
-2. Make bbox.gpkg for bounding box from input shapefile for Area of Interest (AOI). This will be the area of 1m pixels to run the water balance model. Note that the outer border of 1 m pixels will be cut off the final water balance calculations, because determination of slope "eats" up those pixels. You can buffer the shapefile before this step if you are concerned about information loss for those pixels, which is likely to be unnoticeable at the final analysis extent.
-   - At this step check if the bounding box overlaps with a gridMET grid cell. If so, you want to determine which of the overlapping grid cells most closely resembles the average elevation of the AOI.
-   1. Calculate average elevation using 1m DEM
-   2. Compare with elevation in `metdata_elevationdata.nc`
-3. 
-4. Crop raster using AOI bboxes
-   - "Clip raster by extent" tool in QGIS
-	 - Input layer: USGS_1m.tif
-	 - Clipping extent: bbox.gpkg
-	 - save as `input/[site]/dem/dem_nad83.tif`
-5. Make hillshade from dem_nad83.tif
-   - save as `input/[site]/dem/hillshade_nad83.tif`
-   - elevation layer: `input/[site]/dem/dem_nad83.tif`
-   - zfactor: 1
-   - azimuth: 300
-   - vertical angle: 40
-6. Make slope from dem_nad83.tif
-   - save as `input/[site]/dem/slope_nad83.tif`
-   - elevation layer: `input/[site]/dem/dem_nad83.tif`
-   - zfactor: 1
-7. Make aspect from dem_nad83.tif
-   - save as `input/[site]/dem/aspect_nad83.tif`
-   - elevation layer: `input/[site]/dem/dem_nad83.tif`
-   - zfactor: 1
-8. Make soil layer
-   - I use the "Curve Number Generator" plugin in QGIS
-   - Processing Toolbox> Curve Number Generator > Curve Number Generator (CONUS)
-   - Set AOI to bbox
-   - Soils [optional] > save to `input/[site]/soil/ssurgo.gpkg`
-9. Copy files to `data/`
-   - 1980_dayl_na.nc4: This might not be needed anymore... Need to review code.
-   - merged_jennings2.tif
-
-10. Set up sites.csv for batching
+### (Optional) Batching with sites.csv
+Set up sites.csv for batching:
 example:
 site,lon,lat, metdata_elev
 holly_lake_small,  -110.8011392,43.7922368,2912.56
@@ -123,17 +84,12 @@ static_west, -110.805497, 43.675967,3056.44
 static_east, -110.805497, 43.675967,3056.44
 surprise,-110.777570,  43.729726,2872.52
 
-  - If polygons extend past gridMET cell boundaries, set a point here that is within a grid cell that is representative of the site (i.e., similar elevation). The actual point location is not super important as long as it is located within the grid cell you are targetting.
-  - metdata_elev comes from `metdata_elevationdata.nc`
-  
-11. Run `src/00_clim_data_batch.sh`
-  - retrieves gridMET and MACA data for each point in sites.csv
+### Download climate data
 
-12. Run `src/01_resample_layers.R`
- - Resamples 1980_dayl_na.nc4, merged_jennings2.tif, and soils data using 1m DEM as reference
+Run `01_clim_data.R` to download gridMET and MACA climate data for one site or `01_get_climate_data_batch.sh` to batch download for all sites in `sites.csv`. Climate data will be retrieved from 1979-01-01 to 2024-12-31 (all complete years on record) and saved to `gridmet_1979_2023.csv` and `macav2metdata_2006_2099.csv`. This step can take a long time (around 1 hour per site) because of rate limiting from the MACA THREDDS server.
 
-13. (If running on a SLURM cluster) run `02_batch_wb_historical.sbatch` and `02_batch_wb_projections.sbatch`
 
+## Run water balance model
 After running `00_prep_data.R` and `00_clim_data.R` (or `00_get_climate_data_batch.sh`), your `../data/input/{site}` directory should look like this:
 ```
 test/
@@ -150,3 +106,5 @@ test/
 └── soil
     └── soil_whc_025.tif
 ```
+
+(If running on a SLURM cluster) run `02_batch_wb_historical.sbatch` and `02_batch_wb_projections.sbatch`
