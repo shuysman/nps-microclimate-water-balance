@@ -48,7 +48,11 @@ The water balance model (`02_start_wb_v_1_5.py`) requires Python 3 and the follo
 
 
 # Model Run Instructions
+An example is included in `/data/input/test` which can be used to run the model for testing. The following steps can be used to reproduce the test files in order to demonstrate how to set up new sites for the model. The test site demonstrates a site polygon that *does not* overlap a metdata gridcell, an issue described in more detail below.
+
 ## Site Setup
+Create (or receive) a shapefile (ESRI Shapefile format) for a single area of interest to run the water balance model. Depending on computer memory constraints, the site size should be to below around 100-150 hectares. At around 100 hectares, sites need approximately 10 GB of RAM to run the water balance model. 
+
 Create a directory in data/input with the desired site name, i.e., `/data/input/holly_lake_small` and create subdirectories `shapefile`, `dem`, and `soil` in this directory. The site name used for the input directory needs be kept consistent with others steps (e.g., `sites.csv` if using batching). Place the input shapefile (extracted if compressed) in the `shapefile` directory. 
 
 Retrieve 1 m USGS LiDAR data for the area of interest
@@ -57,7 +61,7 @@ Retrieve 1 m USGS LiDAR data for the area of interest
    - Select `Data` > `Elevation Products (3D Elevation Program Products and Services)` > `Subcategories` > `1 meter DEM`
    - File format:  `GeoTIFF, IMG`
    - Click `Search Products`, click the little shopping cart to add one layer to cart or add all to cart and stitch together if AOI overlaps multiple files.
-   - Save the tiff to `dem/USGS_1m.tif`
+   - Save the GeoTIFF file to `dem/USGS_1m.tif`
    
 Once the input shapefile and 1 m DEM are saved in the correct locations, run `00_prep_data.R` which automates the rest of the data preparation steps. This script:
 1. Crops the 1 m DEM to the extent of the site polygon input. 
@@ -74,7 +78,7 @@ Once the input shapefile and 1 m DEM are saved in the correct locations, run `00
 If no overlap, proceed to downloading the climate data. If there is overlap, select a point in the polygon that is within a gridcell that is representative of the site. I recommend selecting the metdata gridcell that most closely matches the elevation of the site (average elevation of all 1 m DEM pixels within the site polygon). If using the `00_clim_data.R` script in interactive mode, you will be prompted with choices to help facilitate this selection (not yet implemented). `00_get_climate_data_batch.sh` can be used to non-interactively batch download climate data for all sites in `sites.csv`.
 
 ### (Optional) Batching with sites.csv
-Set up sites.csv for batching:
+Set up sites.csv for batching. Enter the (machine-readable) site name, longitude, latitude, and metdata elevation. If the site overlaps multiple metdata cells, choose a representative one (similar elevation to mean 1 m USGS DEM elevation for the site) and use that elevation here. Metdata elevation is used to calculate lapse rate adjustments in the water balance model.
 example:
 ```
 site,               lon,            lat,        metdata_elev
@@ -88,7 +92,7 @@ surprise,           -110.777570,    43.729726,  2872.52
 
 ### Download climate data
 
-Run `01_clim_data.R` to download gridMET and MACA climate data for one site or `01_get_climate_data_batch.sh` to batch download for all sites in `sites.csv`. Climate data will be retrieved from 1979-01-01 to 2024-12-31 (all complete years on record) and saved to `gridmet_1979_2023.csv` and `macav2metdata_2006_2099.csv`. This step can take a long time (around 1 hour per site) because of rate limiting from the MACA THREDDS server.
+Run `01_clim_data.R` to download gridMET and MACA climate data for one site or `01_get_climate_data_batch.sh` to batch download for all sites in `sites.csv`. Climate data will be retrieved from 1979-01-01 to 2024-12-31 (all complete years on record) and saved to `gridmet_1979_2023.csv` and `macav2metdata_2006_2099.csv`. This step can take a long time (around 1 hour per site) because of rate limiting from the [MACA THREDDS server](http://thredds.northwestknowledge.net:8080/thredds/catalog.html).
 
 
 ## Run water balance model
@@ -110,3 +114,7 @@ test/
 ```
 
 (If running on a SLURM cluster) run `02_batch_wb_historical.sbatch` and `02_batch_wb_projections.sbatch`
+
+Model output will be saved `$HOME/out/$SITE/wb` (daily water balance grids) and `$HOME/out/$SITE/sums` (annual sum grids). The annual sum grids can be easier to work with for final reporting unless metrics are needed at a finer timestep, e.g., seasonal (summer) sum of AET. Currently, only AET and CWD are saved as model output. If other variables are desired, `02_start_wb_v_1_5.py` can be modified. 
+
+The Rmd in `reports/` give examples of how to generate reports from the final output. Much code from these reports can be reused for new sites but in general new sites will require new Rmd reports to be written.
