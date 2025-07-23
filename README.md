@@ -76,13 +76,15 @@ If no overlap, proceed to downloading the climate data. If there is overlap, sel
 ### (Optional) Batching with sites.csv
 Set up sites.csv for batching:
 example:
-site,lon,lat, metdata_elev
-holly_lake_small,  -110.8011392,43.7922368,2912.56
-burroughs,-109.674010,43.705940,2813.28
-avalanche,-110.134319, 44.482919,2790
-static_west, -110.805497, 43.675967,3056.44
-static_east, -110.805497, 43.675967,3056.44
-surprise,-110.777570,  43.729726,2872.52
+```
+site,				lon,			lat,		metdata_elev
+holly_lake_small,	-110.8011392,	43.7922368, 2912.56
+burroughs,			-109.674010,	43.705940,	2813.28
+avalanche,			-110.134319,	44.482919,	2790
+static_west,		-110.805497,	43.675967,	3056.44
+static_east,		-110.805497,	43.675967,	3056.44
+surprise,			-110.777570,	43.729726,	2872.52
+```
 
 ### Download climate data
 
