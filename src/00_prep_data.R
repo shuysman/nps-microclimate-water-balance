@@ -19,21 +19,17 @@ option_list <- list(
               help="Target CRS for output [default EPSG:26912]")
 )
 
-## Testing parameters
-name <- "test"
-shape_file <- here("data/input/test/shapefile/sample.shp")
-dem <- here("data/input/test/dem/USGS_1m.tif")
-target_crs <- crs("EPSG:26912")
-
 data_dir <- here(glue("data/input/{name}/"))
 
-## Coerce polygon to output CRS in case it is something else
+### Coerce polygon to output CRS in case it is something else
 site_poly <- vect(shape_file) %>% project(target_crs)
 
-## Crop and write out 1m DEM
+
+### Crop and write out 1m DEM
 reference <- rast(dem) %>% crop(site_poly) %>% writeRaster(file.path(data_dir, "dem/dem_nad83.tif"), overwrite=TRUE)
 
-## Create and write out slope, aspect, and hillshade
+
+### Create and write out slope, aspect, and hillshade
 ## Slope in radians, aspect in degrees
 ## Aspect is used to run fold_aspect() which takes aspects
 ## in degrees and returns folded aspect in radians
@@ -45,7 +41,7 @@ writeRaster(slope, file.path(data_dir, "dem/slope_nad83.tif"), overwrite=TRUE)
 aspect <- reference %>%
   terrain(v="aspect",unit="degrees")
 writeRaster(aspect, file.path(data_dir, "dem/aspect_nad83.tif"), overwrite=TRUE)
-## We also need aspect in radians for terra::shade
+# We also need aspect in radians for terra::shade
 aspect_rad <- reference %>%
   terrain(v="aspect",unit="radians")
 
@@ -53,6 +49,7 @@ hillshade <- shade(slope = slope, aspect = aspect_rad)
 writeRaster(hillshade, file.path(data_dir, "dem/hillshade_nad83.tif"), overwrite=TRUE)
 
 
+### Resample provided Jennings T50 coefficient grid to be compatible with other layers
 t50 <- rast(here("data/merged_jennings2.tif"))
 t50 <- project(subset(t50, 1), reference, method = "near")
 t50 <- resample(t50, reference, method = "near")
@@ -61,7 +58,7 @@ t50 <- crop(t50, reference)
 writeRaster(t50, file.path(data_dir, "jennings_t50_coefficients.tif"), overwrite=TRUE)
 
 
-## Download and rasterize SSURGO AWS data
+### Download and rasterize SSURGO AWS soil data
 soils <- get_ssurgo(reference, label = name)
 
 soils_aws <- soils$spatial %>%
