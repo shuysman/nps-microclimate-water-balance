@@ -93,7 +93,7 @@ if (interactive()) {
   message(glue("Site data: \n"))
   print(site_data)
 
-  sites_file <- file.path("sites.csv")
+  sites_file <- here("src/sites.csv")
 
   if (!file.exists(sites_file)) {
     append <- readline_check("sites.csv not found. Write to new sites.csv? (y/n): ", type = "grep", pattern = "[yn]")
