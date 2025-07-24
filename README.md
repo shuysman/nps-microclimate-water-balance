@@ -1,10 +1,10 @@
 # NPS gridded water balance model
 
-This repository contains a high-resolution, gridded water balance model developed for ecological applications within the National Park Service. 
+This repository contains a high-resolution, gridded water balance model developed for ecological applications within the National Park Service. The project is a modified version of Mike Tercek's [NPS Gridded Water Balance Model](http://www.yellowstoneecology.com/research/Gridded_Water_Balance_Model_Version_2_User_Manual.pdf) designed to run at finer resolutions and with some additional features such as empirically derived lapse rate corrections. The core water balance logic is the same between the two projects.
 
-The model is designed to downscale coarse climate datasets (GridMET for historical analysis and MACA for future projections) to a 1-meter resolution. It integrates fine-scale topographic data derived from LiDAR and soil water holding capacity from SSURGO to simulate key water balance components—such as Actual Evapotranspiration (AET) and Climatic Water Deficit—at the microsite level.
+The model is designed to downscale coarse climate datasets (GridMET for historical analysis and MACA for future projections) to a 1-meter resolution. It integrates fine-scale topographic data derived from LiDAR and soil water holding capacity from SSURGO to simulate water balance components—such as Actual Evapotranspiration (AET) and Climatic Water Deficit—at the microsite level.
 
-This detailed, localized output supports critical conservation and management decisions, such as identifying optimal planting locations for climate-sensitive species like Whitebark Pine. The workflow is built for batch processing multiple sites on high-performance computing (HPC) clusters.
+This detailed, localized output supports critical conservation and management decisions, such as identifying optimal planting locations for climate-sensitive species like Whitebark Pine. The workflow is built for batch processing multiple sites on high-performance computing (HPC) clusters, but can also be run on a workstation or laptop with sufficient resources.
 
 [2002-2022 Average Annual Climatic Water Deficit - Surprise and Amphitheater, GRTE](https://github.com/user-attachments/assets/c366ca37-40a1-4cf6-9676-012ead12c62b)
 
@@ -25,7 +25,7 @@ Some manual data preparation is required. QGIS is recommended for these steps bu
 
 **R Environment:**
 
-Initial data prep and climate data retrieval steps require R and the following packages:
+This code was tested with `R` 4.5.0. Initial data prep and climate data retrieval steps require R and the following packages:
 *   `climateR`
 *   `glue`
 *   `sf`
@@ -48,7 +48,7 @@ The water balance model (`02_start_wb_v_1_5.py`) requires Python 3 and the follo
 
 
 # Model Run Instructions
-An example is included in `/data/input/test` which can be used to run the model for testing. The following steps can be used to reproduce the test files in order to demonstrate how to set up new sites for the model. The test site demonstrates a site polygon that *does not* overlap a metdata gridcell, an issue described in more detail below. This is a modified version of Mike Tercek's [NPS Gridded Water Balance Model](http://www.yellowstoneecology.com/research/Gridded_Water_Balance_Model_Version_2_User_Manual.pdf) designed to run at finer resolutions and with some additional features such as empirically derived lapse rate corrections. The core water balance logic is the same between the two scripts.
+An example is included in `/data/input/test` which can be used to run the model for testing. The following steps can be used to reproduce the test files in order to demonstrate how to set up new sites for the model. The test site demonstrates a site polygon that *does not* overlap a metdata gridcell, an issue described in more detail below. 
 
 ## Site Setup
 Create (or receive) a shapefile (ESRI Shapefile format) for a single area of interest to run the water balance model. Depending on computer memory constraints, the site size should be to below around 100-150 hectares. At around 100 hectares, sites need approximately 10 GB of RAM to run the water balance model. 
@@ -78,8 +78,9 @@ Once the input shapefile and 1 m DEM are saved in the correct locations, run `00
 If no overlap, proceed to downloading the climate data. If there is overlap, select a point in the polygon that is within a gridcell that is representative of the site. I recommend selecting the metdata gridcell that most closely matches the elevation of the site (average elevation of all 1 m DEM pixels within the site polygon). If using the `00_clim_data.R` script in interactive mode, you will be prompted with choices to help facilitate this selection (not yet implemented). `00_get_climate_data_batch.sh` can be used to non-interactively batch download climate data for all sites in `sites.csv`.
 
 ### (Optional) Batching with sites.csv
-Set up sites.csv for batching. Enter the (machine-readable) site name, longitude, latitude, and metdata elevation. If the site overlaps multiple metdata cells, choose a representative one (similar elevation to mean 1 m USGS DEM elevation for the site) and use that elevation here. Metdata elevation is used to calculate lapse rate adjustments in the water balance model.
-example:
+Set up sites.csv for batching. Enter the (machine-readable) site name, longitude, latitude, and metdata elevation. If the site overlaps multiple metdata cells, choose a representative one (similar elevation to mean 1 m USGS DEM elevation for the site) and use that elevation here. Metdata elevation is used to calculate lapse rate adjustments in the water balance model. Latitude/longitude coordinates are used to retrieve climate data in `00_clim_data.R` when run in batch mode and in some of the included site report files.
+
+Example `sites.csv`:
 ```
 site,               lon,            lat,        metdata_elev
 holly_lake_small,   -110.8011392,   43.7922368, 2912.56
@@ -99,9 +100,9 @@ Run `01_clim_data.R` to download gridMET and MACA climate data for one site or `
 After running `00_prep_data.R` and `00_clim_data.R` (or `00_get_climate_data_batch.sh`), your `../data/input/{site}` directory should look like this:
 ```
 test/
-├── shapefile
+├── shapefile/
 │   └── sample.shp
-├── dem
+├── dem/
 │   ├── aspect_nad83.tif
 │   ├── dem_nad83.tif
 │   ├── hillshade_nad83.tif
@@ -109,7 +110,7 @@ test/
 ├── gridmet_1979_2023.csv
 ├── macav2metdata_2006_2099.csv
 ├── jennings_t50_coefficients.tif
-└── soil
+└── soil/
     └── soil_whc_025.tif
 ```
 
