@@ -29,11 +29,16 @@ The water balance model (`02_start_wb_v_1_5.py`) requires Python 3. Use `spec-fi
 	* [renv](https://rstudio.github.io/renv/) for managing R packages.
 	* [Mamba](https://mamba.readthedocs.io/en/latest/installation.html), [Conda](https://docs.conda.io/en/latest/miniconda.html), or python virtual environments for managing software packages and environments for python scripts.
 *   **Command-Line Utilities:**
-    *   [Climate Data Operators (CDO)](https://code.mpimet.mpg.de/projects/cdo/): For processing NetCDF files.
+    *   [Climate Data Operators (CDO)](https://code.mpimet.mpg.de/projects/cdo/): For processing NetCDF files. This code was tested with CDO versions 2.1.1 and 2.5.1 but should be compatible with other versions.
     *   [GNU Parallel](https://www.gnu.org/software/parallel/): For executing jobs in parallel.
 
 # Model Run Instructions
 An example is included in `data/input/test/` which can be used to run the model for testing. The following steps can be used to reproduce the test files in order to demonstrate how to set up new sites for the model. The test site demonstrates a site polygon that *does not* overlap a metdata gridcell, an issue described in more detail below. 
+
+Data prep and model code is located in `src/`. The model run is separated into three phases:
+1. Site setup and data prep (R): `00_prep_data.R` and `01_clim_data.R`
+2. Water balance model (python): `02_start_wb_v_1_5.py`
+3. Post-processing: `03_annual_sum.sh`
 
 ## Site Setup
 Create (or receive) a shapefile (ESRI Shapefile format) for a single area of interest to run the water balance model. Depending on computer memory constraints, the site size should be to below around 100-150 hectares. At around 100 hectares, sites need approximately 10 GB of RAM to run the water balance model. 
@@ -107,14 +112,23 @@ test/
     └── soil_whc_025.tif
 ```
 
-(If running on a SLURM cluster) run `02_batch_wb_historical.sbatch` and `02_batch_wb_projections.sbatch`. This runs the water balance model for historical and projected scenarios, saves daily AET and CWD grids, and uses `cdo` to generate the annual sum files for AET and CWD.
-
-(If running on a workstation or laptop) Run `python 02_start_wb_v_1_5.py $model $scenario $site` for each model and scenario combination you wish to run for each site. Historical gridMET runs use `historical` for model and `gridmet` for scenario. For projections, enter the GCM for model and either rcp45 or rcp85 for scenario.
-
-
 **NOTE** `02_start_wb_v_1_5.py` contains a routine to adjust daily temperature values based on a lapse rate correction factor estimated for Mt. Washburn by Tercek et al. 2021a. This correction increases or decreases daily temperature based on the difference between the 1 m USGS LiDAR DEM pixel elevation and the 4 km metdata cell elevation. The different between original and adjusted temperature can be significant if the 1 m DEM pixel is significantly higher or lower in elevation than the metdata cell. The lapse rate corrections are likely to be inaccurate for locations distant from Mt. Washburn and should be altered or disabled for locations not in its vicinity.
 
-Model output will be saved `output/$SITE/wb` (daily water balance grids) and `$output/$SITE/sums` (annual sum grids). The annual sum grids can be easier to work with for final reporting unless metrics are needed at a finer timestep, e.g., seasonal (summer) sum of AET. Currently, only AET and CWD are saved as model output. If other variables are desired, `02_start_wb_v_1_5.py` can be modified. 
+## SLURM clusters
+Run `02_batch_wb_historical.sbatch` and `02_batch_wb_projections.sbatch`. This runs the water balance model for historical and projected scenarios, saves daily AET and CWD grids, and uses `cdo` to generate the annual sum files for AET and CWD.
+
+## Workstation or laptop instructions
+Run `python 02_start_wb_v_1_5.py $model $scenario $site` to run the daily water balance model for each model and scenario combination for each site that you wish to run. Historical gridMET runs use `historical` for model and `gridmet` for scenario. For projections, enter the GCM for model and either rcp45 or rcp85 for scenario.
+
+(Optional, recommended) After running the daily water balance mode, run `03_annual_sum.sh` to calculate gridded annual sums of AET and CWD and save them to a single file.
+
+## Output
+
+Model output will be saved `output/$SITE/wb` (daily water balance grids) and `$output/$SITE/sums` (annual sum grids). The annual sum grids can be easier to work with for final reporting because the memory requirements are lower than the daily water balance grids unless metrics are needed at a finer timestep, e.g., summer June-July-August sums of AET. Currently, only AET and CWD are saved as model output. If other variables are desired, `02_start_wb_v_1_5.py` can be modified to write those files. 
+
+The [User guide for the NPS Gridded Water Balance Model Dataset](http://www.yellowstoneecology.com/research/Gridded_Water_Balance_Model_Version_2_User_Manual.pdf) contains more detailed information on all model outputs and output file format and metadata. This repository is equivalent to version 1.5 in this document.
+
+# Reporting 
 
 The Rmd in `reports/` give examples of how to generate reports from the final output. Much code from these reports can be reused for new sites but in general new sites will require new Rmd reports to be written.
 
