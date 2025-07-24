@@ -6,3 +6,4 @@
 *qgis/
 *data/
 output/
+.venv/
