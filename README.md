@@ -75,10 +75,10 @@ Once the input shapefile and 1 m DEM are saved in the correct locations, run `00
 
 ![Overlapping and non-overlapping site polygons](./docs/gridcell-overlap-example.png)
 
-If no overlap, proceed to downloading the climate data. If there is overlap, select a point in the polygon that is within a gridcell that is representative of the site. I recommend selecting the metdata gridcell that most closely matches the elevation of the site (average elevation of all 1 m DEM pixels within the site polygon). If using the `00_clim_data.R` script in interactive mode, you will be prompted with choices to help facilitate this selection (not yet implemented). `00_get_climate_data_batch.sh` can be used to non-interactively batch download climate data for all sites in `sites.csv`.
+If no overlap, proceed to downloading the climate data. If there is overlap, select a point in the polygon that is within a gridcell that is representative of the site. I recommend selecting the metdata gridcell that most closely matches the elevation of the site (average elevation of all 1 m DEM pixels within the site polygon). If using the `01_clim_data.R` script in interactive mode, you will be prompted with choices to help facilitate this selection (not yet implemented). `01_get_climate_data_batch.sh` can be used to non-interactively batch download climate data for all sites in `sites.csv`.
 
 ### (Optional) Batching with sites.csv
-Set up sites.csv for batching. Enter the (machine-readable) site name, longitude, latitude, and metdata elevation. If the site overlaps multiple metdata cells, choose a representative one (similar elevation to mean 1 m USGS DEM elevation for the site) and use that elevation here. Metdata elevation is used to calculate lapse rate adjustments in the water balance model. Latitude/longitude coordinates are used to retrieve climate data in `00_clim_data.R` when run in batch mode and in some of the included site report files.
+Set up sites.csv for batching. Enter the (machine-readable) site name, longitude, latitude, and metdata elevation. If the site overlaps multiple metdata cells, choose a representative one (similar elevation to mean 1 m USGS DEM elevation for the site) and use that elevation here. Metdata elevation is used to calculate lapse rate adjustments in the water balance model. Latitude/longitude coordinates are used to retrieve climate data in `01_clim_data.R` when run in batch mode and in some of the included site report files.
 
 Example `sites.csv`:
 ```
@@ -97,7 +97,7 @@ Run `01_clim_data.R` to download gridMET and MACA climate data for one site or `
 
 
 ## Run water balance model
-After running `00_prep_data.R` and `00_clim_data.R` (or `00_get_climate_data_batch.sh`), your `../data/input/{site}` directory should look like this:
+After running `00_prep_data.R` and `01_clim_data.R` (or `01_get_climate_data_batch.sh`), your `../data/input/{site}` directory should look like this:
 ```
 test/
 ├── shapefile/
