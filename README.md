@@ -112,7 +112,7 @@ test/
     └── soil_whc_025.tif
 ```
 
-**NOTE** `02_start_wb_v_1_5.py` contains a routine to adjust daily temperature values based on a lapse rate correction factor estimated for Mt. Washburn by Tercek et al. 2021a. This correction increases or decreases daily temperature based on the difference between the 1 m USGS LiDAR DEM pixel elevation and the 4 km metdata cell elevation. The different between original and adjusted temperature can be significant if the 1 m DEM pixel is significantly higher or lower in elevation than the metdata cell. The lapse rate corrections are likely to be inaccurate for locations distant from Mt. Washburn and should be altered or disabled for locations not in its vicinity.
+> :warning: **Warning!** `02_start_wb_v_1_5.py` contains a routine to adjust daily temperature values based on a lapse rate correction factor estimated for Mt. Washburn by Tercek et al. 2021a. This correction increases or decreases daily temperature based on the difference between the 1 m USGS LiDAR DEM pixel elevation and the 4 km metdata cell elevation. The different between original and adjusted temperature can be significant if the 1 m DEM pixel is significantly higher or lower in elevation than the metdata cell. The lapse rate corrections are likely to be inaccurate for locations distant from Mt. Washburn and should be altered or disabled for locations not in its vicinity.
 
 ## SLURM clusters
 Run `02_batch_wb_historical.sbatch` and `02_batch_wb_projections.sbatch`. This runs the water balance model for historical and projected scenarios, saves daily AET and CWD grids, and uses `cdo` to generate the annual sum files for AET and CWD.
