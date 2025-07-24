@@ -539,7 +539,7 @@ if __name__ == '__main__':
     print(f"Input dir: {input_data_path}")
     print(f"Output dir: {output_data_path}")
 
-    site_data = pd.read_csv("sites.csv")
+    site_data = pd.read_csv(f"{PROJECT_ROOT}/src/sites.csv")
     site_data = site_data[site_data['site'] == site]
     ### Get the elevation the metdata cell containing the site uses.
     ### This will be compared with the "real" elevations from the DEM
