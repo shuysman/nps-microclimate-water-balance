@@ -14,15 +14,6 @@ This project relies on a combination of Python, R, and shell scripting and has o
 
 Some manual data preparation is required. QGIS is recommended for these steps but any GIS providing basic raster and vector manipulations should also work.
 
-**Software:**
-
-*   **GIS:** [QGIS](https://qgis.org/) for initial data preparation.
-*   **Environment Management:** [Mamba](https://mamba.readthedocs.io/en/latest/installation.html) or [Conda](https://docs.conda.io/en/latest/miniconda.html) for managing software packages and environments.
-*   **Command-Line Utilities:**
-    *   [Climate Data Operators (CDO)](https://code.mpimet.mpg.de/projects/cdo/): For processing NetCDF files.
-    *   [GNU Parallel](https://www.gnu.org/software/parallel/): For executing jobs in parallel.
-
-
 **R Environment:**
 
 This code was tested with `R` 4.5.0. Initial data prep and climate data retrieval steps require R and the following packages:
@@ -46,6 +37,15 @@ The water balance model (`02_start_wb_v_1_5.py`) requires Python 3 and the follo
 *   `utm`
 *   `xarray`
 
+**Other Recommended Software:**
+
+*   **GIS:** [QGIS](https://qgis.org/) for initial data preparation.
+*   **Environment Management:** 
+	* [renv](https://rstudio.github.io/renv/) for managing R packages.
+	* [Mamba](https://mamba.readthedocs.io/en/latest/installation.html), [Conda](https://docs.conda.io/en/latest/miniconda.html), or python virtual environments for managing software packages and environments for python scripts.
+*   **Command-Line Utilities:**
+    *   [Climate Data Operators (CDO)](https://code.mpimet.mpg.de/projects/cdo/): For processing NetCDF files.
+    *   [GNU Parallel](https://www.gnu.org/software/parallel/): For executing jobs in parallel.
 
 # Model Run Instructions
 An example is included in `/data/input/test` which can be used to run the model for testing. The following steps can be used to reproduce the test files in order to demonstrate how to set up new sites for the model. The test site demonstrates a site polygon that *does not* overlap a metdata gridcell, an issue described in more detail below. 
