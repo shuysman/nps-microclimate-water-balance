@@ -6,6 +6,7 @@ library(terra)
 library(glue)
 library(janitor)
 library(FedData)
+library(here)
 
 option_list <- list(
   make_option(c("-n", "--name"), type="character", callback=janitor::clean_names,
@@ -20,11 +21,11 @@ option_list <- list(
 
 ## Testing parameters
 name <- "test"
-shape_file <- file.path("../data/input/test/shapefile/sample.shp")
-dem <- file.path("../data/input/test/dem/USGS_1m.tif")
+shape_file <- here("data/input/test/shapefile/sample.shp")
+dem <- here("data/input/test/dem/USGS_1m.tif")
 target_crs <- crs("EPSG:26912")
 
-data_dir <- file.path(glue("../data/input/{name}/"))
+data_dir <- here(glue("data/input/{name}/"))
 
 ## Coerce polygon to output CRS in case it is something else
 site_poly <- vect(shape_file) %>% project(target_crs)
@@ -52,7 +53,7 @@ hillshade <- shade(slope = slope, aspect = aspect_rad)
 writeRaster(hillshade, file.path(data_dir, "dem/hillshade_nad83.tif"), overwrite=TRUE)
 
 
-t50 <- rast(file.path("../data/merged_jennings2.tif"))
+t50 <- rast(here("data/merged_jennings2.tif"))
 t50 <- project(subset(t50, 1), reference, method = "near")
 t50 <- resample(t50, reference, method = "near")
 t50 <- crop(t50, reference)

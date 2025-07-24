@@ -2,6 +2,7 @@ library(terra)
 library(climateR)
 library(glue)
 library(tidyverse)
+library(here)
 
 # https://gist.github.com/debruine/e096f8142d3b383dc55f195bba5c7b0a
 #' Check readline input
@@ -46,11 +47,11 @@ readline_check <- function(prompt, type = c("numeric", "length", "minlength", "m
 }
 
 
-metdata_elev <- rast("../data/metdata_elevationdata.nc")
+metdata_elev <- rast(here("data/metdata_elevationdata.nc"))
 
 if (interactive()) {
   site_name <- readline_check("Enter site name. It should be in machine readable format (e.g., 'Avalanche Peak' -> 'avalanche_peak': ", "maxlength", 16)
-  site_data_path <- file.path(glue("../data/input/{site_name}"))
+  site_data_path <- here(glue("data/input/{site_name}"))
 
   dem <- rast(file.path(site_data_path, "dem/dem_nad83.tif"))
 
@@ -112,7 +113,7 @@ if (interactive()) {
 
   site_name <- args[1]
 
-  site_data_path <- file.path(glue("../data/input/{site_name}/"))
+  site_data_path <- here(glue("data/input/{site_name}/"))
 
   site_data <- read_csv("sites.csv") %>% filter(site == site_name)
 

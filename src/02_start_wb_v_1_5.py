@@ -523,13 +523,15 @@ def make_correction_factors(elevation_error):
     return (high_correction_factors, low_correction_factors)
   
 if __name__ == '__main__':
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
     model = sys.argv[1]
     scenario = sys.argv[2]
     site = sys.argv[3]
     
-    input_data_path = f"{os.environ['HOME']}/out/{site}/daily-split/" ## daily-split directory with daily T/P layers
-    output_data_path = f"{os.environ['HOME']}/out/{site}/wb/" ## Output Directory for daily water balance npz
-    site_data_path = f"../data/input/{site}/"
+    input_data_path = f"{PROJECT_ROOT}/output/{site}/daily-split/" ## daily-split directory with daily T/P layers
+    output_data_path = f"{PROJECT_ROOT}/output/{site}/wb/" ## Output Directory for daily water balance npz
+    site_data_path = f"{PROJECT_ROOT}/data/input/{site}/"
 
     Path(output_data_path).mkdir(parents = True, exist_ok = True)
     

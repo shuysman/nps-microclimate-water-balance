@@ -19,8 +19,8 @@ calc_annual_sum () {
     site=$4
     echo $site $model $scenario $var
 
-    in_dir="${HOME}/out/${site}/wb"
-    out_dir="${HOME}/out/${site}/sums"
+    in_dir="../output/${site}/wb"
+    out_dir="../output/${site}/sums"
     
     if [ ! -d $out_dir ]; then
 	mkdir $out_dir    
