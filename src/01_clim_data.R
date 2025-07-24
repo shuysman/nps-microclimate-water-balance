@@ -115,7 +115,7 @@ if (interactive()) {
 
   site_data_path <- here(glue("data/input/{site_name}/"))
 
-  site_data <- read_csv("sites.csv") %>% filter(site == site_name)
+  site_data <- read_csv(here("src/sites.csv") %>% filter(site == site_name)
 
   lon <- site_data$lon
   lat <- site_data$lat
