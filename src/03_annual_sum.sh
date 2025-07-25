@@ -36,5 +36,5 @@ calc_annual_sum () {
 
 export -f calc_annual_sum
 
-parallel -j 16 calc_annual_sum {1} {2} {3} {4} ::: $hist_models ::: $hist_scenarios ::: $vars ::: $sites
-parallel -j 64 calc_annual_sum {1} {2} {3} {4} ::: $proj_models ::: $proj_scenarios ::: $vars ::: $sites
+parallel -j 4 calc_annual_sum {1} {2} {3} {4} ::: $hist_models ::: $hist_scenarios ::: $vars ::: $sites
+parallel -j 4 calc_annual_sum {1} {2} {3} {4} ::: $proj_models ::: $proj_scenarios ::: $vars ::: $sites
