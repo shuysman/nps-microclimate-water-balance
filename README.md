@@ -55,7 +55,7 @@ Retrieve 1 m USGS LiDAR data for the area of interest
    
 Once the input shapefile and 1 m DEM are saved in the correct locations, run `00_prep_data.R` which automates the rest of the data preparation steps. The script requires arguments for site name (matching site data directory name in data/input/), shapefile, and source USGS 1 m DEM GeoTIFF file in the following format:
 
-`Rscript src/00_prep_data.R --name=test --shapefile=data/input/test/shapefile/sample.shp --dem=data/input/test/dem/`
+`Rscript src/00_prep_data.R --name=test --shapefile=data/input/test/shapefile/sample.shp --dem=data/input/test/dem/USGS_1m.tif`
 
 This script:
 1. Crops the 1 m DEM to the extent of the site polygon input. 

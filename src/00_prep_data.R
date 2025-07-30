@@ -4,20 +4,29 @@ library(tidyterra)
 library(sf)
 library(terra)
 library(glue)
-library(janitor)
 library(FedData)
 library(here)
 
 option_list <- list(
-  make_option(c("-n", "--name"), type="character", callback=janitor::clean_names,
+  make_option(c("-n", "--name"), type="character",
               help="Site name"),
-  make_option(c("-s", "--shape_file"), type="character",
+  make_option(c("-s", "--shapefile"), type="character",
               help="Input shapefile"),
   make_option(c("-d", "--dem"), type="character", ### TODO: Maybe we can automate downloading the USGS 1m DEM?
               help="Input USGS 1m DEM (uncropped)"),
   make_option(c("-c", "--target_crs"), type="character", default=crs("EPSG:26912"),
               help="Target CRS for output [default EPSG:26912]")
 )
+
+opt_parser <- OptionParser(option_list=option_list)
+opt <- parse_args(opt_parser)
+
+name <- opt$name
+shape_file <- opt$shapefile
+dem <- opt$dem
+target_crs <- opt$target_crs
+
+message(glue("Preparing data for site {name}\nShapefile: {shape_file}\ndem: {dem}\nTarget CRS: {target_crs}"))
 
 data_dir <- here(glue("data/input/{name}/"))
 
