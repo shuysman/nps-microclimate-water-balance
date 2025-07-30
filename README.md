@@ -44,9 +44,14 @@ Steps after running `00_prep_data.R` require site information to be configured i
 
 To run the complete workflow on the included example site:
 ```
+## To set up R and python environments
+## Only needs to be performed once or when R renv and python venv are modified
+R -e "renv::install()"
+pip install -r requirements.txt
+
 Rscript src/00_prep_data.R --name=test --shapefile=data/input/test/shapefile/sample.shp --dem=data/input/test/dem/USGS_1m.tif
 bash src/01_get_climate_data_batch.sh
-python 02_start_wb_v_1_5.py historical gridmet test
+python src/02_start_wb_v_1_5.py historical gridmet test
 bash src/03_annual_sum.sh
 ``` 
 
@@ -128,7 +133,7 @@ test/
 Run `02_batch_wb_historical.sbatch` and `02_batch_wb_projections.sbatch`. This runs the water balance model for historical and projected scenarios, saves daily AET and CWD grids, and uses `cdo` to generate the annual sum files for AET and CWD.
 
 ## Workstation or laptop instructions
-Run `python 02_start_wb_v_1_5.py $model $scenario $site` to run the daily water balance model for each model and scenario combination for each site that you wish to run. Historical gridMET runs use `historical` for model and `gridmet` for scenario. For projections, enter the GCM for model and either rcp45 or rcp85 for scenario.
+Run `python src/02_start_wb_v_1_5.py $model $scenario $site` to run the daily water balance model for each model and scenario combination for each site that you wish to run. Historical gridMET runs use `historical` for model and `gridmet` for scenario. For projections, enter the GCM for model and either rcp45 or rcp85 for scenario.
 
 (Optional, recommended) After running the daily water balance mode, run `bash src/03_annual_sum.sh` to calculate gridded annual sums of AET and CWD and save them to a single file.
 
