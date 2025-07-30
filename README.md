@@ -120,7 +120,7 @@ Run `02_batch_wb_historical.sbatch` and `02_batch_wb_projections.sbatch`. This r
 ## Workstation or laptop instructions
 Run `python 02_start_wb_v_1_5.py $model $scenario $site` to run the daily water balance model for each model and scenario combination for each site that you wish to run. Historical gridMET runs use `historical` for model and `gridmet` for scenario. For projections, enter the GCM for model and either rcp45 or rcp85 for scenario.
 
-(Optional, recommended) After running the daily water balance mode, run `03_annual_sum.sh` to calculate gridded annual sums of AET and CWD and save them to a single file.
+(Optional, recommended) After running the daily water balance mode, run `bash src/03_annual_sum.sh` to calculate gridded annual sums of AET and CWD and save them to a single file.
 
 ## Output
 

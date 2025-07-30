@@ -2,8 +2,8 @@
 
 set -euxo pipefail
 
-sites=$(awk -F, 'NR > 1 { print $1 }' sites.csv)
+sites=$(awk -F, 'NR > 1 { print $1 }' src/sites.csv)
 
 for site in $sites; do
-    Rscript 01_clim_data.R $site
+    Rscript src/01_clim_data.R $site
 done

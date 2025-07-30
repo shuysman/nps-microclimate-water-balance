@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-sites=$(awk -F, 'NR > 1 { print $1 }' sites.csv)
+sites=$(awk -F, 'NR > 1 { print $1 }' src/sites.csv)
 
 vars="AET Deficit"
 
@@ -19,8 +19,8 @@ calc_annual_sum () {
     site=$4
     echo $site $model $scenario $var
 
-    in_dir="../output/${site}/wb"
-    out_dir="../output/${site}/sums"
+    in_dir="output/${site}/wb"
+    out_dir="output/${site}/sums"
     
     if [ ! -d $out_dir ]; then
 	mkdir $out_dir    
