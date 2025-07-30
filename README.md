@@ -40,6 +40,16 @@ Data prep and model code is located in `src/`. The model run is separated into t
 2. Water balance model (python): `02_start_wb_v_1_5.py`
 3. Post-processing: `03_annual_sum.sh`
 
+Steps after running `00_prep_data.R` require site information to be configured in `src/sites.csv`.
+
+To run the complete workflow on the included example site:
+```
+Rscript src/00_prep_data.R --name=test --shapefile=data/input/test/shapefile/sample.shp --dem=data/input/test/dem/USGS_1m.tif
+bash src/01_get_climate_data_batch.sh
+python 02_start_wb_v_1_5.py historical gridmet test
+bash src/03_annual_sum.sh
+``` 
+
 ## Site Setup
 Create (or receive) a shapefile (ESRI Shapefile format) for a single area of interest to run the water balance model. Depending on computer memory constraints, the site size should be to below around 100-150 hectares. At around 100 hectares, sites need approximately 10 GB of RAM to run the water balance model. 
 
