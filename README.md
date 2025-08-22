@@ -147,6 +147,9 @@ The [User guide for the NPS Gridded Water Balance Model Dataset](http://www.yell
 
 The Rmd in `reports/` give examples of how to generate reports from the final output. Much code from these reports can be reused for new sites but in general new sites will require new Rmd reports to be written.
 
+# Acknowledgments
+This work was supported by funding provided by the National Park Service through an agreement with the [Northern Rockies Conservation Cooperative](https://nrccooperative.org/)
+
 # References
 Tercek, M.T., Rodman, A., Woolfolk, S., Wilson, Z., Thoma, D., and Gross, J., 2021a, Correctly applying lapse rates in ecological studies: comparing temperature observations and gridded data in Yellowstone: Ecosphere, v. 12, p. e03451, doi:10.1002/ecs2.3451.
 
