@@ -43,6 +43,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libudunits2-dev \
     # Build tools
     build-essential \
+    # Rust compiler (required for gifski R package)
+    cargo \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
