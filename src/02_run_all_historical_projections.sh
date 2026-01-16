@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-sites=$(awk -F, 'NR > 1 { print $1 }' sites.csv)
+sites=$(awk -F, 'NR > 1 { print $1 }' src/sites.csv)
 
 ## GCM/RCP combinations chosen to represent extremes in area of interest, following
 ## Lawrence, David J., Amber N. Runyon, John E. Gross, Gregor W. Schuurman, and Brian W. Miller. 2021.
@@ -12,3 +12,4 @@ parallel -j32 python src/02_start_wb_v_1_5.py {1} {2} {3} \
   ::: historical CanESM2 HadGEM2-CC365 MRI-CGCM3 MRI-CGCM3 \
   :::+ gridmet rcp85 rcp85 rcp45 rcp85 \
   ::: $sites
+g
