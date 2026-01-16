@@ -1,8 +1,12 @@
 # Containerfile for NPS Gridded Water Balance Model
 # Build: podman build -t nps-wb:latest .
+#        podman build --build-arg NCPUS=16 -t nps-wb:latest .  # Custom core count
 # Run:   podman run -it --rm -v ./data:/app/data -v ./output:/app/output nps-wb:latest
 
 FROM docker.io/rocker/geospatial:4.5.0
+
+# Number of cores for parallel compilation (override with --build-arg NCPUS=N)
+ARG NCPUS=4
 
 LABEL maintainer="NPS Water Balance Project"
 LABEL description="High-resolution (1m) water balance model for the National Park Service"
@@ -11,6 +15,10 @@ LABEL description="High-resolution (1m) water balance model for the National Par
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+
+# Parallel compilation settings
+ENV MAKEFLAGS="-j${NCPUS}"
+ENV RENV_CONFIG_INSTALL_PARALLEL=TRUE
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -53,7 +61,7 @@ COPY requirements.txt .
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python dependencies
+# Install Python dependencies (MAKEFLAGS enables parallel compilation for native code)
 # Note: GDAL Python bindings must match system GDAL version, so we install it separately
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     grep -v "^GDAL" requirements.txt > requirements-nogdal.txt && \
@@ -65,8 +73,8 @@ COPY renv.lock .
 COPY .Rprofile .
 COPY renv/ renv/
 
-# Restore R packages using renv
-RUN R -e "renv::restore(prompt = FALSE)"
+# Restore R packages using renv (parallel installation)
+RUN R -e "options(Ncpus = ${NCPUS}); renv::restore(prompt = FALSE)"
 
 # Copy the rest of the application
 COPY src/ src/
