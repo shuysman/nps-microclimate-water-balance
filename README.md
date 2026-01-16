@@ -63,7 +63,8 @@ Alternatively, use `spec-file.txt` with Conda/Mamba (deprecated).
 - **GIS:** [QGIS](https://qgis.org/) for initial data preparation
 - **Environment Management:**
   - [renv](https://rstudio.github.io/renv/) for managing R packages
-  - [Mamba](https://mamba.readthedocs.io/en/latest/installation.html), [Conda](https://docs.conda.io/en/latest/miniconda.html), or Python virtual environments
+  - Python virtual environments (Recommended)
+  - [Mamba](https://mamba.readthedocs.io/en/latest/installation.html) or  [Conda](https://docs.conda.io/en/latest/miniconda.html) (HPC using SLURM)
 - **Command-Line Utilities:**
   - [Climate Data Operators (CDO)](https://code.mpimet.mpg.de/projects/cdo/): For processing NetCDF files. Tested with CDO versions 2.1.1 and 2.5.1.
   - [GNU Parallel](https://www.gnu.org/software/parallel/): For executing jobs in parallel.
