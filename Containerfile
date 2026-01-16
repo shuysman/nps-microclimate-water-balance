@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cdo \
     # GNU Parallel for job parallelization
     parallel \
-    # GDAL Python bindings dependencies
+    # GDAL dev headers and tools
     libgdal-dev \
     gdal-bin \
     # NetCDF libraries
@@ -59,16 +59,17 @@ WORKDIR /app
 # Copy requirements first for better layer caching
 COPY requirements.txt .
 
-# Create Python virtual environment and install packages
+# Create Python virtual environment
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python dependencies (MAKEFLAGS enables parallel compilation for native code)
-# Note: GDAL Python bindings must match system GDAL version, so we install it separately
+# Install Python dependencies
+# NumPy must be installed first, then GDAL compiled against it (for gdal_array support)
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    grep -v "^GDAL" requirements.txt > requirements-nogdal.txt && \
-    pip install --no-cache-dir -r requirements-nogdal.txt && \
-    pip install --no-cache-dir "GDAL==$(gdal-config --version)"
+    pip install --no-cache-dir numpy && \
+    pip install --no-cache-dir --no-build-isolation "GDAL==$(gdal-config --version)" && \
+    grep -v "^GDAL" requirements.txt | grep -v "^numpy" > requirements-filtered.txt && \
+    pip install --no-cache-dir -r requirements-filtered.txt
 
 # Copy renv files for R package restoration
 COPY renv.lock .
