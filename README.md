@@ -18,6 +18,7 @@ This detailed, localized output supports critical conservation and management de
   - [R Environment](#r-environment)
   - [Python Environment](#python-environment)
   - [Other Recommended Software](#other-recommended-software)
+- [Container Installation](#container-installation)
 - [Quick Start](#quick-start)
 - [Model Run Instructions](#model-run-instructions)
   - [Phase 1: Site Setup](#phase-1-site-setup)
@@ -68,6 +69,55 @@ Alternatively, use `spec-file.txt` with Conda/Mamba (deprecated).
 - **Command-Line Utilities:**
   - [Climate Data Operators (CDO)](https://code.mpimet.mpg.de/projects/cdo/): For processing NetCDF files. Tested with CDO versions 2.1.1 and 2.5.1.
   - [GNU Parallel](https://www.gnu.org/software/parallel/): For executing jobs in parallel.
+
+## Container Installation
+
+A container image is available as an alternative to manual environment setup. The container includes all Python and R dependencies pre-installed. Requires [Podman](https://podman.io/) or [Docker](https://www.docker.com/).
+
+### Building the Container
+
+```bash
+# Standard build (4 cores for package compilation)
+podman build -t nps-wb:latest .
+
+# Custom core count for faster builds
+podman build --build-arg NCPUS=16 -t nps-wb:latest .
+```
+
+Replace `podman` with `docker` if using Docker.
+
+### Running the Container
+
+Mount the `data/` and `output/` directories to persist input data and results:
+
+```bash
+# Interactive shell
+podman run -it --rm \
+  -v ./data:/app/data \
+  -v ./output:/app/output \
+  nps-wb:latest bash
+
+# Run a specific command
+podman run --rm \
+  -v ./data:/app/data \
+  -v ./output:/app/output \
+  nps-wb:latest \
+  python src/02_start_wb_v_1_5.py historical gridmet test
+```
+
+### Container Quick Start
+
+```bash
+# Build the container
+podman build -t nps-wb:latest .
+
+# Run the complete workflow for the test site
+podman run --rm -v ./data:/app/data -v ./output:/app/output nps-wb:latest \
+  bash -c "Rscript src/00_prep_data.R --name=test --shapefile=data/input/test/shapefile/sample.shp --dem=data/input/test/dem/USGS_1m.tif && \
+           bash src/01_get_climate_data_batch.sh && \
+           python src/02_start_wb_v_1_5.py historical gridmet test && \
+           bash src/03_annual_sum.sh"
+```
 
 ## Quick Start
 
