@@ -264,7 +264,7 @@ here as an example for new sites:
     # See Step 5-6 above for how to determine these values
     echo "test,-109.8745,44.2156,2650" >> src/sites.csv
 
-Run the workflow:
+Run the workflow (run from project root directory /home/ubuntu/nps-microclimate-water-balance):
 
     # Phase 1: Prepare data (DEM derivatives and soil data)
     Rscript src/00_prep_data.R \
