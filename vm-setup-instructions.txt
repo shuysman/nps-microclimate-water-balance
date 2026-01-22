@@ -1,0 +1,24 @@
+## Ubuntu VM setup documentation
+## Stephen Huysman -- 1/22/2026
+
+# Pull WB model repository. Use branch setup for VM code
+git clone https://github.com/shuysman/nps-microclimate-water-balance.git
+git checkout ubuntu-vm
+
+# Setup miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash ~/Miniconda3-latest-Linux-x86_64.sh
+source ~/.bashrc
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda install -n base conda-forge::mamba
+ 
+# Setup conda environment in WB model repo - spec-file.txt
+# This environment manages python and R installs as well as external packages like CDO and GNU Parallel
+ cd nps-microclimate-water-balance/
+mamba create --name nps_wb --file spec-file.txt
+
+# Certain R packages aren't available in conda, or CRAN. Needed to install them manually from their github repos. 
+conda run -n nps_wb R -e "remotes::install_github('mikejohnson51/AOI')"
+sudo apt install cargo ##  Rust is required to setup dependencies for climateR
+conda run -n nps_wb R -e "remotes::install_github('mikejohnson51/climateR')" 
+conda run -n nps_wb R -e "remotes::install_github('ropensci/FedData')" 
