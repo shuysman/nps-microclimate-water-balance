@@ -1,4 +1,39 @@
 #!/bin/bash
+#
+# 03_annual_sum.sh - Aggregate Daily Water Balance to Annual Sums
+#
+# Converts daily AET and Deficit NetCDF grids from the water balance model
+# into annual sum grids using CDO (Climate Data Operators). This is the final
+# processing step before analysis and visualization.
+#
+# PROCESS:
+#   1. For each year's daily NetCDF: compute annual sum (cdo yearsum)
+#   2. Merge all years into a single time-series NetCDF (cdo mergetime)
+#   3. Clean up intermediate files
+#
+# SCENARIOS PROCESSED:
+#   Historical:  historical/gridmet (1979-2024)
+#   Projections: CanESM2, HadGEM2-CC365, MRI-CGCM3 × rcp45, rcp85 (2006-2099)
+#
+# USAGE:
+#   bash src/03_annual_sum.sh
+#
+# INPUTS:
+#   src/sites.csv - List of sites to process
+#   output/{site}/wb/{model}_{scenario}_{year}_{var}.nc - Daily water balance grids
+#
+# OUTPUTS:
+#   output/{site}/sums/{model}_{scenario}_{var}_annual_sum.nc
+#     - Variables: AET, Deficit (annual totals in mm*10)
+#     - One file per model/scenario combination
+#
+# DEPENDENCIES:
+#   - CDO (Climate Data Operators) must be installed and in PATH
+#   - GNU Parallel for concurrent processing
+#
+# NOTE: Values are stored as mm*10 (multiplied by 10 for integer storage).
+#       Divide by 10 when analyzing to get mm/year.
+#
 set -euxo pipefail
 
 sites=$(awk -F, 'NR > 1 { print $1 }' src/sites.csv)

@@ -1,12 +1,31 @@
 #!/bin/bash
 ##
-## example-array.slurm.sh: submit an array of jobs with a varying parameter
+## 02_batch_wb_historical.sbatch - SLURM Batch Script for Historical Water Balance
 ##
-## Lines starting with #SBATCH are read by Slurm. Lines starting with ## are comments.
-## All other lines are read by the shell.
+## Runs the water balance model for all sites using GridMET historical climate
+## data (1979-2024). Uses GNU Parallel to process multiple sites concurrently.
+##
+## USAGE:
+##   sbatch src/02_batch_wb_historical.sbatch
+##
+## INPUTS:
+##   src/sites.csv - List of sites to process (reads site names from column 1)
+##   For each site: data/input/{site}/ must contain prepared inputs
+##
+## OUTPUTS:
+##   output/{site}/wb/*_historical_gridmet_*.nc - Daily AET/Deficit NetCDFs
+##   wb-historical-{jobid}.out/.err - SLURM logs
+##
+## RESOURCE REQUIREMENTS:
+##   16 CPUs, 128GB RAM, 1 day runtime
+##   Runs 6 sites in parallel (-j6)
+##
+## PREREQUISITES:
+##   - Mamba environment "nps-wb" with Python dependencies
+##   - Completed Phase 1 (00_prep_data.R) and Phase 2 (01_clim_data.R) for all sites
 ##
 #SBATCH --account=priority-briansmithers        #specify the account to use
-#SBATCH --job-name=wb-projections            # job name
+#SBATCH --job-name=wb-historical             # job name
 #SBATCH --partition=priority              # queue partition to run the job in
 #SBATCH --nodes=1                       # number of nodes to allocate
 ##SBATCH --ntasks-per-node=1             # number of descrete tasks - keep at one except for MPI

@@ -1,12 +1,33 @@
 #!/bin/bash
 ##
-## example-array.slurm.sh: submit an array of jobs with a varying parameter
+## 03_annual_sum.sbatch - SLURM Batch Script for Annual Aggregation
 ##
-## Lines starting with #SBATCH are read by Slurm. Lines starting with ## are comments.
-## All other lines are read by the shell.
+## Wrapper script to run 03_annual_sum.sh on HPC cluster. Aggregates daily
+## water balance outputs into annual sum grids using CDO.
+##
+## USAGE:
+##   sbatch src/03_annual_sum.sbatch
+##
+## INPUTS:
+##   output/{site}/wb/*.nc - Daily water balance NetCDFs from Phase 2
+##
+## OUTPUTS:
+##   output/{site}/sums/{model}_{scenario}_{var}_annual_sum.nc
+##   sum-{jobid}.out/.err - SLURM logs
+##
+## RESOURCE REQUIREMENTS:
+##   128 CPUs, 512GB RAM, 1 day runtime
+##   High memory needed for merging large time-series
+##
+## PREREQUISITES:
+##   - Mamba environment "cdo" with CDO installed
+##   - Completed water balance runs (02_start_wb_v_1_5.py)
+##
+## NOTE: This is automatically called at the end of 02_batch_wb_projections.sbatch,
+##       but can be run separately if needed.
 ##
 #SBATCH --account=priority-briansmithers        #specify the account to use
-#SBATCH --job-name=sum            # job name
+#SBATCH --job-name=annual-sum            # job name
 #SBATCH --partition=priority              # queue partition to run the job in
 #SBATCH --nodes=1                       # number of nodes to allocate
 ##SBATCH --ntasks-per-node=1             # number of descrete tasks - keep at one except for MPI

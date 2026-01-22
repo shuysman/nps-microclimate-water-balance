@@ -1,16 +1,56 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-May 2024
-Modified Water Balance Model to run on 1m LiDAR data
-Proof of Concept for downscaled Water Balance runs at smaller scales.  Used to examin planting microsites for
-Summer 2024 Whitebark Pine planting with Nancy Bockino in Shoshone NF
+02_start_wb_v_1_5.py - Gridded Water Balance Model (Version 1.5)
 
-December 2019
-Gridded Cloud Water Balance Model Version 1.5: Retroactively removing Senay et al. NDVI method of calculating AET BUT retaining Jennings et al. 2018 T50 coefficients for estimating snow.
-This version also removes the IGRID veg layer precip correction. The relevant lines have just been commented out. 
---Modified from the "season test" code of November 2019.
-This version reads the reprojected tif files from the MACA GCMs instead of daymet netCDF files.
+Core water balance model for the NPS high-resolution climate analysis. Calculates
+daily Actual Evapotranspiration (AET) and Climatic Water Deficit (CWD) at 1-meter
+resolution using downscaled climate data and LiDAR topography.
+
+USAGE:
+    python src/02_start_wb_v_1_5.py {model} {scenario} {site}
+
+ARGUMENTS:
+    model     - Climate model: "historical" | "CanESM2" | "HadGEM2-CC365" | "MRI-CGCM3"
+    scenario  - Emissions scenario: "gridmet" (historical) | "rcp45" | "rcp85"
+    site      - Site name (must exist in src/sites.csv)
+
+EXAMPLES:
+    python src/02_start_wb_v_1_5.py historical gridmet test
+    python src/02_start_wb_v_1_5.py CanESM2 rcp85 avalanche_peak
+
+INPUTS (from data/input/{site}/):
+    dem/dem_nad83.tif              - 1m elevation (for lapse rate corrections)
+    dem/slope_nad83.tif            - Slope in radians (for heat load)
+    dem/aspect_nad83.tif           - Aspect in degrees (for folded aspect)
+    soil/soil_whc_025.tif          - Soil water holding capacity 0-25cm (mm)
+    jennings_t50_coefficients.tif  - Rain/snow partition temperature (Jennings et al. 2018)
+    gridmet_1979_2023.csv          - Historical climate (if model=historical)
+    macav2metdata_2006_2099.csv    - Projected climate (if model=GCM)
+
+OUTPUTS (to output/{site}/wb/):
+    {model}_{scenario}_{year}_AET.nc     - Daily actual evapotranspiration (mm*10)
+    {model}_{scenario}_{year}_Deficit.nc - Daily climatic water deficit (mm*10)
+
+KEY PARAMETERS (hardcoded):
+    melt_factor = 4.0         - Snow melt rate (mm/°C/day), Hock 2003
+    precip_fraction = 0.167   - Rain fraction per degree above T50
+    PET_type = "oudin"        - PET method (Oudin et al. 2010)
+    output_mult_factor = 10.0 - Multiplier for 16-bit integer storage
+
+METHODS:
+    - Snow: Hock 2003 melt factor with Jennings et al. 2018 T50 coefficients
+    - PET: Oudin et al. 2010 (radiation-based, temperature-driven)
+    - Heat Load: McCune & Keon 2002 (adjusts PET by aspect/slope)
+    - Soil Water: Lutz et al. 2010 (exponential decay extraction)
+    - Lapse Rates: Tercek 2021 monthly rates from Mt. Washburn
+
+PLATFORM:
+    Linux only (uses POSIX fork-based multiprocessing)
+
+HISTORY:
+    May 2024 - Modified for 1m LiDAR data, whitebark pine planting microsites
+    Dec 2019 - Version 1.5: Removed Senay NDVI method, retained Jennings T50
 """
 import datetime
 import itertools

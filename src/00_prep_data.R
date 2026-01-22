@@ -1,3 +1,36 @@
+#!/usr/bin/env Rscript
+#
+# 00_prep_data.R - Site Data Preparation for NPS Water Balance Model
+#
+# This script prepares all spatial input layers required for the water balance
+# model from a user-provided shapefile and 1-meter DEM. It is the first step
+# in the modeling workflow.
+#
+# INPUTS (via command line):
+#   --name        Site name (used for output directory naming)
+#   --shapefile   Path to site boundary polygon (any CRS, will be reprojected)
+#   --dem         Path to USGS 1m LiDAR DEM (uncropped)
+#   --target_crs  Output coordinate reference system [default: EPSG:26912]
+#
+# OUTPUTS (written to data/input/{name}/):
+#   dem/dem_nad83.tif       - Cropped 1m DEM
+#   dem/slope_nad83.tif     - Slope in radians (for snow melt calculations)
+#   dem/aspect_nad83.tif    - Aspect in degrees (for folded aspect calculation)
+#   dem/hillshade_nad83.tif - Hillshade for visualization
+#   jennings_t50_coefficients.tif - Rain/snow partition coefficients (Jennings et al.)
+#   soil/soil_whc_025.tif   - Soil water holding capacity 0-25cm depth (mm)
+#
+# USAGE:
+#   Rscript src/00_prep_data.R \
+#     --name=test \
+#     --shapefile=data/input/test/shapefile/sample.shp \
+#     --dem=data/input/test/dem/USGS_1m.tif
+#
+# DEPENDENCIES:
+#   - Jennings T50 grid must exist at data/merged_jennings2.tif
+#   - Internet connection required for SSURGO soil data download
+#
+
 library(optparse)
 library(tidyverse)
 library(tidyterra)

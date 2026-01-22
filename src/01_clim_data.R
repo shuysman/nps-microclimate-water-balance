@@ -1,3 +1,45 @@
+#!/usr/bin/env Rscript
+#
+# 01_clim_data.R - Climate Data Retrieval for NPS Water Balance Model
+#
+# This script retrieves daily climate data from GridMET (historical) and MACA
+# (future projections) for a site location. It supports two modes of operation:
+#
+# INTERACTIVE MODE (run in R console):
+#   - Prompts for site name
+#   - Automatically extracts site centroid coordinates from shapefile
+#   - Looks up metdata grid cell elevation for lapse rate corrections
+#   - Optionally appends site info to src/sites.csv
+#
+# BATCH MODE (run from command line):
+#   - Reads site coordinates from src/sites.csv
+#   - No user prompts required
+#
+# INPUTS:
+#   Batch mode argument: site name (must exist in src/sites.csv)
+#   Required files:
+#     - data/input/{site}/dem/dem_nad83.tif (from 00_prep_data.R)
+#     - data/input/{site}/shapefile/*.shp
+#     - data/metdata_elevationdata.nc (4km elevation grid for lapse rates)
+#     - src/sites.csv (batch mode only)
+#
+# OUTPUTS (written to data/input/{site}/):
+#   gridmet_1979_2023.csv      - Historical daily climate (1979-2024)
+#                                Variables: tmmn, tmmx, pr (min/max temp, precip)
+#   macav2metdata_2006_2099.csv - Projected daily climate (2006-2099)
+#                                Models: CanESM2, HadGEM2-CC365, MRI-CGCM3
+#                                Scenarios: rcp45, rcp85
+#
+# USAGE:
+#   Interactive: source("src/01_clim_data.R") in R console
+#   Batch:       Rscript src/01_clim_data.R {site_name}
+#   Batch all:   bash src/01_get_climate_data_batch.sh
+#
+# DEPENDENCIES:
+#   - Internet connection required (downloads from THREDDS servers)
+#   - climateR package for GridMET/MACA access
+#
+
 library(terra)
 library(climateR)
 library(glue)

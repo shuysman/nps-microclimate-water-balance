@@ -1,9 +1,35 @@
 #!/bin/bash
 ##
-## example-array.slurm.sh: submit an array of jobs with a varying parameter
+## 02_batch_wb_projections.sbatch - SLURM Batch Script for Projected Water Balance
 ##
-## Lines starting with #SBATCH are read by Slurm. Lines starting with ## are comments.
-## All other lines are read by the shell.
+## Runs the water balance model for all sites using MACA downscaled climate
+## projections (2006-2099). Processes 3 GCMs × 2 RCPs = 6 scenarios per site.
+## Automatically runs annual aggregation (03_annual_sum.sh) after completion.
+##
+## GCM/SCENARIO MATRIX:
+##   CanESM2       - rcp45, rcp85 (warm/hot-dry futures)
+##   HadGEM2-CC365 - rcp45, rcp85 (hot futures)
+##   MRI-CGCM3     - rcp45, rcp85 (warm-wet futures)
+##
+## USAGE:
+##   sbatch src/02_batch_wb_projections.sbatch
+##
+## INPUTS:
+##   src/sites.csv - List of sites to process
+##   For each site: data/input/{site}/macav2metdata_2006_2099.csv
+##
+## OUTPUTS:
+##   output/{site}/wb/{model}_{scenario}_{year}_{var}.nc - Daily NetCDFs
+##   output/{site}/sums/ - Annual aggregated grids (via 03_annual_sum.sh)
+##   wb-projections-{jobid}.out/.err - SLURM logs
+##
+## RESOURCE REQUIREMENTS:
+##   64 CPUs, 256GB RAM, 1.5 day runtime
+##   Runs 36 jobs in parallel (-j36): 6 scenarios × 6 concurrent sites
+##
+## PREREQUISITES:
+##   - Mamba environments: "nps-wb" (Python), "cdo" (annual aggregation)
+##   - Completed Phase 1 and Phase 2 for all sites
 ##
 #SBATCH --account=priority-briansmithers        #specify the account to use
 #SBATCH --job-name=wb-projections            # job name
