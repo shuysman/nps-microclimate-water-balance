@@ -12,4 +12,3 @@ parallel -j32 python src/02_start_wb_v_1_5.py {1} {2} {3} \
   ::: historical CanESM2 HadGEM2-CC365 MRI-CGCM3 MRI-CGCM3 \
   :::+ gridmet rcp85 rcp85 rcp45 rcp85 \
   ::: $sites
-g
