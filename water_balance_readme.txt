@@ -284,6 +284,35 @@ Run the workflow (run from project root directory /home/ubuntu/nps-microclimate-
 NOTE: Phase 2 climate downloads can take ~1 hour due to server rate limits.
 
 
+VISUALIZING RESULTS
+-------------------
+After the model run completes, use the example R Markdown notebook to visualize
+inputs and outputs:
+
+    reports/example-washburn.Rmd
+
+This notebook produces diagnostic maps of model inputs (DEM, slope, aspect,
+soil), boxplots of microclimatic variability across scenarios, spatial maps
+of AET and CWD, and algorithmically selected planting locations.
+
+To render the notebook from the command line:
+
+    Rscript -e 'rmarkdown::render("reports/example-washburn.Rmd")'
+
+Or open it in RStudio and click "Knit".
+
+If running the model on a remote VM, retrieve the output files first:
+
+    # From your local machine, copy output from the VM
+    scp -r user@vm-host:/path/to/nps-microclimate-water-balance/output/test/sums \
+        output/test/sums
+
+The notebook is preconfigured for the "test" site. See the Configuration
+section at the top of the notebook for paths and analysis parameters. It can
+be adapted for additional sites by changing site_name, display_name, and the
+corresponding paths.
+
+
 TROUBLESHOOTING
 ---------------
 - "Latitude outside of range": Site must be between 30-60°N latitude
