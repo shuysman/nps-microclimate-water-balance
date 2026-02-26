@@ -5,6 +5,14 @@ This document describes how to run the water balance model on the virtual
 machine using the 'nps_wb' conda environment.
 
 
+!! IMPORTANT - OUTPUT UNITS !!
+All water balance model outputs (AET and Deficit, both daily and annual
+sums) are stored as mm * 10 (16-bit integer compression). You MUST divide
+raster values by 10 to obtain actual millimeter values. For example, a
+stored pixel value of 3500 = 350.0 mm. This applies to all NetCDF files
+in output/{site}/wb/ and output/{site}/sums/.
+
+
 PREREQUISITES
 -------------
 1. Conda/Mamba installed
@@ -227,7 +235,8 @@ Outputs created in output/{site_name}/wb/:
     {model}_{scenario}_{year}_AET.nc     - Daily actual evapotranspiration
     {model}_{scenario}_{year}_Deficit.nc - Daily climatic water deficit
 
-NOTE: Values are stored as mm * 10 (divide by 10 for actual mm values).
+!! IMPORTANT: Values are stored as mm * 10 (16-bit integer compression).
+   Divide by 10 to get actual mm values. See OUTPUT UNITS warning above.
 
 
 PHASE 3b: ANNUAL AGGREGATION
